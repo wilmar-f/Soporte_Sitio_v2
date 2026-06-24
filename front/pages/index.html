@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Diagnóstico — Soporte en Sitio</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="index.module.css">
+  <!-- MSAL.js v2 — autenticación Office 365
+       Debe cargarse ANTES que los módulos JS para quedar disponible como global. -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+</head>
+<body>
+  <header id="banner"></header>
+  <div id="toast-container"></div>
+
+  <main class="login-main">
+    <div class="login-card">
+      <div class="login-card__encabezado">
+        <h1 class="login-card__titulo">MÓDULO DIAGNÓSTICO</h1>
+        <p class="login-card__subtitulo">SOPORTE EN SITIO</p>
+      </div>
+
+      <form id="login-form" class="login-form" novalidate>
+        <div class="campo">
+          <label for="usuario">Usuario</label>
+          <input
+            type="text"
+            id="usuario"
+            name="usuario"
+            placeholder="Ingresa tu usuario"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="campo">
+          <label for="contrasena">Contraseña</label>
+          <input
+            type="password"
+            id="contrasena"
+            name="contrasena"
+            placeholder="Ingresa tu contraseña"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn btn--primario btn--full" id="btn-ingresar">
+          Ingresar
+        </button>
+      </form>
+
+      <div class="login-separador"><span>o</span></div>
+
+      <div class="login-o365-wrapper">
+        <button type="button" class="btn btn--primario btn--full" id="btn-office365">
+          Ingreso Office 365
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Sistema de Diagnóstico en Sitio — Todos los derechos reservados</p>
+  </footer>
+
+  <script type="module" src="../js/index.js"></script>
+</body>
+</html>

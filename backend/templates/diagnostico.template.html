@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<!--
+  diagnostico.template.html
+  Plantilla de Diagnóstico en Sitio — reproducida desde Plantilla Diagnostico.xlsx
+  Código de documento: FR-BAI09.11 | Versión: 1
+
+  Estructura fiel al Excel original:
+    - Encabezado con logos (imagen1 = logo principal, imagen2 = logo secundario)
+    - Sección: UBICACIÓN Y FECHA
+    - Sección: DATOS DEL USUARIO
+    - Sección: DATOS DE EQUIPOS
+    - Sección: CARACTERÍSTICAS DEL EQUIPO
+    - Texto libre: DESCRIPCIÓN DE LA FALLA
+    - Texto libre: ACCIONES REALIZADAS
+    - Texto libre: DIAGNÓSTICO FINAL
+    - Tabla de TEST DEL FABRICANTE
+    - Sección: FIRMA Y DATOS DEL TÉCNICO
+
+  Paleta de colores (tema Office del Excel):
+    - Encabezado de sección:  bg #D0CFCF (lt2 theme color con tint -0.0999)
+    - Texto de label:         bold, negro
+    - Bordes de tabla:        1px solid #444
+    - Fondo de celda datos:   blanco
+
+  Uso: Los placeholders {{campo}} son reemplazados en usuario.js
+  antes de capturar con html2canvas y generar el PDF.
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+      font-size: 8pt;
+      color: #000;
+      background: #fff;
+      width: 816px;   /* Carta: 8.5in × 96dpi */
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Wrapper con margen blanco exterior + borde visible (como en el PDF de referencia) */
+    .plantilla-wrapper {
+      margin: 18px 20px;          /* margen blanco alrededor de la plantilla */
+      border: 1.5px solid #555;   /* borde que delimita la plantilla */
+      padding: 6px 8px;           /* padding interno dentro del borde */
+      box-sizing: border-box;
+    }
+
+    /* ── Encabezado de página ─────────────────────── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid #444;
+      margin-bottom: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .page-header__logos {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px;
+      min-width: 100px;
+      flex-shrink: 0;
+      border-right: 1.5px solid #444;
+    }
+    .page-header__logos img {
+      height: 32px;
+      max-width: 72px;
+      object-fit: contain;
+    }
+    .page-header__titulo {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      padding: 4px 6px;
+      border-right: 1.5px solid #444;
+    }
+    .page-header__titulo p:first-child {
+      font-size: 8.5pt;
+      color: #555;
+    }
+    .page-header__titulo h1 {
+      font-size: 10pt;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+    }
+    .page-header__codigo {
+      padding: 4px 6px;
+      font-size: 7pt;
+      white-space: normal;
+      min-width: 88px;
+      max-width: 96px;
+      text-align: center;
+    }
+
+    /* ── Tabla principal ──────────────────────────── */
+    .tabla-diagnostico {
+      width: 100%;
+      max-width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      border: 1.5px solid #444;
+      margin-top: -1px;
+    }
+
+    .tabla-diagnostico td {
+      border: 1px solid #888;
+      padding: 3px 5px;
+      vertical-align: middle;
+      font-size: 7.5pt;
+      line-height: 1.4;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      height: auto;
+    }
+    /* Alineación superior para celdas de texto largo */
+    .tabla-diagnostico td.td-valor {
+      vertical-align: middle;
+    }
+
+    /* Celdas de encabezado de sección */
+    .th-seccion {
+      background: #D0CFCF;
+      font-weight: 700;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 3px 5px !important;
+      border: 1px solid #666 !important;
+    }
+
+    .th-label {
+      background: #D0CFCF;
+      font-weight: 700;
+      font-size: 7pt;
+      white-space: normal;
+      word-break: break-word;
+      padding: 2px 4px !important;
+      border: 1px solid #888 !important;
+    }
+
+    .td-valor {
+      background: #fff;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      vertical-align: middle;
+    }
+
+    .td-texto-grande {
+      min-height: 36px;
+      vertical-align: top;
+      padding: 3px 5px !important;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.3;
+      font-size: 7.5pt;
+    }
+
+    .td-firma {
+      min-height: 48px;
+      vertical-align: middle;
+      text-align: left;       /* Firma alineada a la izquierda */
+      padding: 4px 6px !important;
+    }
+    .td-firma img {
+      max-height: 44px;
+      max-width: 140px;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Datos del técnico (parte inferior) */
+    .tecnico-row {
+      display: flex;
+      gap: 0;
+    }
+    .td-tecnico-label {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<div class="plantilla-wrapper">
+
+<!-- ════════════════════════════════════════════════════
+     ENCABEZADO DE PÁGINA
+     ════════════════════════════════════════════════════ -->
+     <center><h2> Formato <br>
+DIAGNÓSTICO DE ACTIVOS SOPORTE EN SITIO</h2></center>
+<div class="page-header">
+  <div class="page-header__logos">
+    <!-- Logo principal (imagen 1 del Excel — reemplazar con /assets/logo1.png) -->
+    <img src="/assets/logo1.png" alt="Logo"
+         onerror="this.style.display='none'">
+    <!-- Logo secundario (imagen 2 del Excel) -->
+    <img src="/assets/logo2.png" alt="Logo 2"
+         onerror="this.style.display='none'">
+  </div>
+  <div class="page-header__titulo">
+        <h1>FORMATO DE DIAGNÓSTICO</h1>
+  </div>
+  <div class="page-header__codigo">
+    <strong>Código:</strong> FR-BAI09.11<br>
+    <strong>Versión:</strong> 1
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     TABLA PRINCIPAL DE DIAGNÓSTICO
+     ════════════════════════════════════════════════════ -->
+<table class="tabla-diagnostico">
+  <colgroup>
+    <col style="width:14%">
+    <col style="width:19%">
+    <col style="width:17%">
+    <col style="width:14%">
+    <col style="width:19%">
+    <col style="width:17%">
+  </colgroup>
+
+  <!-- ══ UBICACIÓN Y FECHA ═══════════════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">UBICACIÓN Y FECHA</td>
+  </tr>
+  <tr>
+    <td class="th-label">SEDE</td>
+    <td class="td-valor" colspan="2">{{sede}}</td>
+    <td class="th-label">FECHA</td>
+    <td class="td-valor" colspan="2">{{fecha}}</td>
+  </tr>
+
+  <!-- ══ DATOS DEL USUARIO ════════════════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">DATOS DEL USUARIO</td>
+  </tr>
+  <tr>
+    <td class="th-label" colspan="1">Nombre usuario</td>
+    <td class="td-valor" colspan="2">{{nombreUsuario}}</td>
+    <td class="th-label">Área del usuario</td>
+    <td class="td-valor" colspan="2">{{areaUsuario}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">Cédula</td>
+    <td class="td-valor" colspan="2">{{cedula}}</td>
+    <td class="th-label">Ubicación física</td>
+    <td class="td-valor" colspan="2">{{ubicacionFisica}}</td>
+  </tr>
+
+  <!-- ══ DATOS DE EQUIPOS ═════════════════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">DATOS DE EQUIPOS</td>
+  </tr>
+  <tr>
+    <td class="th-label">Marca</td>
+    <td class="td-valor" colspan="2">{{marca}}</td>
+    <td class="th-label">Serial</td>
+    <td class="td-valor" colspan="2">{{serial}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">Modelo</td>
+    <td class="td-valor" colspan="2">{{modelo}}</td>
+    <td class="th-label">Etiqueta</td>
+    <td class="td-valor" colspan="2">{{etiqueta}}</td>
+  </tr>
+
+  <!-- ══ CARACTERÍSTICAS DEL EQUIPO ══════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">CARACTERÍSTICAS DEL EQUIPO</td>
+  </tr>
+  <tr>
+    <td class="th-label">Procesador Tipo y Velocidad</td>
+    <td class="td-valor" colspan="2">{{procesador}}</td>
+    <td class="th-label">Versión SO</td>
+    <td class="td-valor" colspan="2">{{versionSO}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">RAM</td>
+    <td class="td-valor" colspan="2">{{ram}}</td>
+    <td class="th-label">Nombre del equipo</td>
+    <td class="td-valor" colspan="2">{{nombreEquipo}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">Sistema Operativo</td>
+    <td class="td-valor" colspan="2">{{sistemaOperativo}}</td>
+    <td class="th-label">Versión de Office</td>
+    <td class="td-valor" colspan="2">{{versionOffice}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">HD</td>
+    <td class="td-valor" colspan="2">{{hd}}</td>
+    <td class="th-label" rowspan="2">Mencione las aplicaciones de mayor uso</td>
+    <td class="td-valor" rowspan="2" colspan="2" style="vertical-align:top;padding-top:5px;">{{appsMayorUso}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">Aplicaciones Fuera del Estándar</td>
+    <td class="td-valor" colspan="2">{{appsFueraEstandar}}</td>
+  </tr>
+
+  <!-- ══ DESCRIPCIÓN DE LA FALLA ══════════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">DESCRIBA LA FALLA QUE PRESENTA EL EQUIPO</td>
+  </tr>
+  <tr>
+    <td colspan="6" class="td-texto-grande">{{descripcionFalla}}</td>
+  </tr>
+
+  <!-- ══ ACCIONES REALIZADAS ══════════════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">ACCIONES REALIZADAS PARA TRATAR DE SOLUCIONAR LA FALLA</td>
+  </tr>
+  <tr>
+    <td colspan="6" class="td-texto-grande">{{accionesRealizadas}}</td>
+  </tr>
+
+  <!-- ══ DIAGNÓSTICO FINAL ════════════════════════════ -->
+  <tr>
+    <td colspan="6" class="th-seccion">DESCRIBA EL DIAGNÓSTICO LUEGO DE LAS ACCIONES REALIZADAS.</td>
+  </tr>
+  <tr>
+    <td colspan="6" class="td-texto-grande">{{diagnosticoFinal}}</td>
+  </tr>
+
+  <!-- ══ TABLA TEST DEL FABRICANTE ════════════════════ -->
+  <!--
+    Esta sección corresponde a las filas 24-28 del Excel original.
+    Incluye: Test del fabricante, Intercambio de partes, Razón de solicitud.
+    Los campos {{testFabricanteRealizado}}, {{testFabricanteVersion}}, etc.
+    pueden ser añadidos al formulario en versiones futuras.
+  -->
+  <tr>
+    <td colspan="3" style="border:1px solid #888;"></td>
+    <td colspan="3" class="th-label" style="text-align:center;">PARÁMETROS</td>
+  </tr>
+  <tr>
+    <td colspan="3" style="border:1px solid #888;"></td>
+    <td class="th-label" style="text-align:center;font-size:8.5pt;">REALIZADO<br>(SI - NO)</td>
+    <td class="th-label" style="text-align:center;font-size:8.5pt;">VERSION -<br>NOMBRE</td>
+    <td class="th-label" style="text-align:center;font-size:8.5pt;">RESULTADO<br>TEST</td>
+  </tr>
+  <tr>
+    <td colspan="3" class="th-label" style="font-size:7pt;vertical-align:top;">
+      TEST DEL FABRICANTE (LENOVO-HEWLETT PACKARD) AL DISPOSITIVO EN CONFLICTO
+    </td>
+    <td class="td-valor" style="text-align:center;">{{testFabricanteRealizado}}</td>
+    <td class="td-valor" style="text-align:center;">{{testFabricanteVersion}}</td>
+    <td class="td-valor" style="text-align:center;">{{testFabricanteResultado}}</td>
+  </tr>
+  <tr>
+    <td colspan="3" class="th-label" style="font-size:7pt;vertical-align:top;">
+      SE REALIZÓ INTERCAMBIO DE PARTES (DISCO DURO, MEMORIAS, FUENTE, BATERÍA, CARGADOR, ETC.), CUÁL PARTE Y EL RESULTADO:
+    </td>
+    <td colspan="3" class="td-valor td-texto-grande">{{intercambioPartes}}</td>
+  </tr>
+  <tr>
+    <td colspan="3" class="th-label" style="font-size:7pt;vertical-align:top;">
+      RAZÓN DE SOLICITUD DIFERENTES A FALLAS DE HARDWARE
+    </td>
+    <td colspan="3" class="td-valor td-texto-grande">{{razonSolicitud}}</td>
+  </tr>
+
+  <!-- ══ FIRMA ════════════════════════════════════════ -->
+  <tr>
+    <td colspan="6" class="td-firma" style="border-top:2px solid #444;">
+      <div style="font-weight:700;font-size:9pt;margin-bottom:6px;">Firma</div>
+      {{firmaBase64}}
+    </td>
+  </tr>
+
+  <!-- ══ DATOS DEL TÉCNICO ════════════════════════════ -->
+  <tr style="border-top:3px solid #111111;">
+    <td class="th-label" style="width:10%;">NOMBRE</td>
+    <td class="td-valor" colspan="5">{{nombreTecnico}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">CÉDULA</td>
+    <td class="td-valor" colspan="5">{{cedulaTecnico}}</td>
+  </tr>
+  <tr>
+    <td class="th-label">CARGO</td>
+    <td class="td-valor" colspan="5">{{cargoTecnico}}</td>
+  </tr>
+
+</table>
+
+</div><!-- /.plantilla-wrapper -->
+</body>
+</html>

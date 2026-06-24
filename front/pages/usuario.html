@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Usuario — Diagnóstico</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="usuario.module.css">
+
+  <!-- MSAL.js v2 — requerido para cerrar sesión Office 365 correctamente -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+
+  <!-- PDF: html2canvas + jsPDF (generación 100% en el navegador, sin servidor) -->
+  <!-- Nota: Si en el futuro se requiere subir el PDF automáticamente a OneDrive/SharePoint,
+       eso requeriría implementar Microsoft Graph API con una app registrada en Azure AD,
+       lo cual queda fuera del alcance actual. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+          referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <header id="banner"></header>
+  <div id="toast-container"></div>
+
+  <main class="app-layout">
+    <!-- ── Sidebar ─────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__perfil">
+        <div class="sidebar__avatar" id="user-avatar" aria-hidden="true"></div>
+        <p class="sidebar__bienvenida">Bienvenido,</p>
+        <p class="sidebar__nombre" id="user-nombre">—</p>
+        <p class="sidebar__correo" id="user-correo">—</p>
+        <span class="sidebar__rol" id="user-rol">—</span>
+      </div>
+
+      <nav class="sidebar__nav" aria-label="Menú principal">
+        <button class="sidebar__btn sidebar__btn--activo" id="btn-diagnostico">
+          <span class="sidebar__btn-icono">📋</span>
+          Diagnóstico
+        </button>
+        <button class="sidebar__btn sidebar__btn--peligro" id="btn-cerrar-sesion">
+          <span class="sidebar__btn-icono">🚪</span>
+          Cerrar Sesión
+        </button>
+      </nav>
+    </aside>
+
+    <!-- ── Panel principal ────────────── -->
+    <section class="panel-principal" id="panel-principal" aria-live="polite">
+      <div class="panel-bienvenida" id="panel-bienvenida">
+        <div class="panel-bienvenida__icono">📋</div>
+        <h2>Panel de Diagnóstico</h2>
+        <p>Haz clic en <strong>Diagnóstico</strong> en el menú lateral para abrir el formulario.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Contenedor oculto para renderizar la plantilla antes de capturarla con html2canvas -->
+  <div
+    id="pdf-render"
+    aria-hidden="true"
+    style="position:fixed;left:-9999px;top:0;width:816px;background:#fff;z-index:-1;overflow:hidden;"
+  ></div>
+
+  <footer>
+    <p>&copy; 2024 Sistema de Diagnóstico en Sitio — Todos los derechos reservados</p>
+  </footer>
+
+  <script type="module" src="../js/usuario.js"></script>
+</body>
+</html>

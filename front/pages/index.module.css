@@ -1,0 +1,107 @@
+/* ── Página de Login ──────────────────────────────── */
+
+.login-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  min-height: calc(100vh - var(--banner-altura) - 60px);
+}
+
+/* Card centrada */
+.login-card {
+  background: var(--color-blanco);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--sombra-lg);
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+/* Encabezado de la card */
+.login-card__encabezado {
+  background: var(--color-primario);
+  color: var(--color-blanco);
+  padding: 36px 32px 28px;
+  text-align: center;
+  position: relative;
+}
+.login-card__encabezado::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: var(--color-primario-light);
+  border-radius: 2px;
+}
+
+.login-card__titulo {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.login-card__subtitulo {
+  font-size: 13px;
+  opacity: 0.78;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+/* Formulario dentro de la card */
+.login-form {
+  padding: 32px 28px 28px;
+}
+
+.login-form .btn {
+  margin-top: 6px;
+  padding: 12px;
+  font-size: 15px;
+}
+
+.login-form .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Separador "o" entre botones ── */
+.login-separador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 28px;
+  color: var(--color-gris-medio);
+  font-size: 13px;
+}
+.login-separador::before,
+.login-separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-gris-borde);
+}
+
+/* ── Wrapper botón Office 365 ── */
+.login-o365-wrapper {
+  padding: 0 28px 28px;
+}
+.login-o365-wrapper .btn {
+  padding: 12px;
+  font-size: 15px;
+}
+.login-o365-wrapper .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .login-card__encabezado { padding: 28px 20px 22px; }
+  .login-card__titulo     { font-size: 18px; }
+  .login-form             { padding: 24px 20px 20px; }
+}

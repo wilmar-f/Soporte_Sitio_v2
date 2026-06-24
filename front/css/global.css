@@ -1,0 +1,327 @@
+/* ============================================================
+   GLOBAL.CSS — Variables, reset, banner, footer, componentes
+   Sistema de Diagnóstico en Sitio
+   ============================================================ */
+
+:root {
+  --color-primario:    #1E3A8A;
+  --color-primario-dark: #162d6b;
+  --color-primario-light: #2d4fa3;
+  --color-exito:       #188E16;
+  --color-info:        #00878C;
+  --color-advertencia: #A86105;
+  --color-peligro:     #fd202b;
+
+  --color-texto:       #1a1a2e;
+  --color-texto-suave: #4b5563;
+  --color-fondo:       #f4f6fb;
+  --color-blanco:      #ffffff;
+  --color-gris-claro:  #e2e8f0;
+  --color-gris-medio:  #94a3b8;
+  --color-gris-borde:  #cbd5e1;
+
+  --banner-altura: 70px;
+  --border-radius: 6px;
+  --border-radius-lg: 10px;
+  --sombra:        0 2px 10px rgba(0, 0, 0, 0.10);
+  --sombra-lg:     0 4px 24px rgba(0, 0, 0, 0.14);
+  --fuente:        'Segoe UI', system-ui, -apple-system, sans-serif;
+  --transicion:    0.2s ease;
+}
+
+/* ── Reset ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--fuente);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; font-size: inherit; }
+ul, ol { list-style: none; }
+
+/* ── Banner ───────────────────────────────────────── */
+#banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: var(--banner-altura);
+  background: var(--color-primario);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  gap: 0;
+}
+
+.banner__logos {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  height: 100%;
+  padding: 8px 0;
+  gap: 12px;
+}
+
+.banner__logo {
+  height: 46px;
+  width: auto;
+  max-width: 110px;
+  object-fit: contain;
+  /* Sin filtros: el PNG se muestra tal cual (incluido fondo blanco si lo trae la imagen) */
+  background: transparent;
+}
+
+.banner__logo-placeholder {
+  width: 90px;
+  height: 46px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 10px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Offsets por banner fijo ──────────────────────── */
+main { margin-top: var(--banner-altura); flex: 1; }
+
+/* ── Toast / Alertas ─────────────────────────────── */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: 280px;
+  max-width: 420px;
+  padding: 13px 16px;
+  border-radius: var(--border-radius);
+  color: var(--color-blanco);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--sombra-lg);
+  pointer-events: all;
+  animation: toastIn 0.3s ease forwards;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.4;
+}
+
+.toast--exito       { background: var(--color-exito); }
+.toast--error       { background: var(--color-peligro); }
+.toast--info        { background: var(--color-info); }
+.toast--advertencia { background: var(--color-advertencia); }
+
+.toast__icono { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.toast__texto { flex: 1; }
+.toast__cerrar {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 0 2px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.toast__cerrar:hover { opacity: 1; }
+
+@keyframes toastIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+.toast--saliendo { animation: toastOut 0.3s ease forwards; }
+
+/* ── Campos de formulario ─────────────────────────── */
+.campo {
+  margin-bottom: 14px;
+}
+.campo label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1.5px solid var(--color-gris-borde);
+  border-radius: var(--border-radius);
+  background: var(--color-blanco);
+  color: var(--color-texto);
+  transition: border-color var(--transicion), box-shadow var(--transicion);
+  outline: none;
+}
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+}
+.campo input[readonly],
+.campo input[readonly]:focus {
+  background: #f0f4ff;
+  border-color: var(--color-gris-claro);
+  box-shadow: none;
+  cursor: default;
+  color: var(--color-texto-suave);
+}
+.campo textarea {
+  resize: none;
+  min-height: 64px;
+  overflow: hidden;
+  line-height: 1.5;
+}
+.campo select { cursor: pointer; }
+
+/* Validación visual */
+.campo input.invalido,
+.campo select.invalido,
+.campo textarea.invalido {
+  border-color: var(--color-peligro);
+  box-shadow: 0 0 0 3px rgba(253, 32, 43, 0.10);
+}
+
+/* ── Botones ──────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 22px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: opacity var(--transicion), transform var(--transicion), background var(--transicion);
+  white-space: nowrap;
+}
+.btn:hover   { opacity: 0.88; }
+.btn:active  { transform: scale(0.97); }
+.btn--primario  { background: var(--color-primario);  color: var(--color-blanco); }
+.btn--peligro   { background: var(--color-peligro);   color: var(--color-blanco); }
+.btn--exito     { background: var(--color-exito);     color: var(--color-blanco); }
+.btn--outline   {
+  background: transparent;
+  color: var(--color-primario);
+  border: 1.5px solid var(--color-primario);
+}
+.btn--outline:hover { background: var(--color-primario); color: var(--color-blanco); opacity: 1; }
+.btn--full { width: 100%; }
+
+/* ── Secciones de formulario ──────────────────────── */
+fieldset.seccion {
+  border: none;
+  border-top: 2.5px solid var(--color-primario);
+  margin-bottom: 28px;
+  padding-top: 10px;
+}
+fieldset.seccion legend {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primario);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 10px;
+  background: var(--color-fondo);
+}
+
+/* ── Grid de 2 columnas para campos ──────────────── */
+.campos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+.campos-grid .campo-full { grid-column: 1 / -1; }
+
+/* ── Firma: tabs ─────────────────────────────────── */
+.firma-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--color-gris-claro);
+}
+.firma-tab {
+  background: none;
+  border: none;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color var(--transicion), border-color var(--transicion);
+}
+.firma-tab:hover { color: var(--color-primario); }
+.firma-tab--activo {
+  color: var(--color-primario);
+  border-bottom-color: var(--color-primario);
+}
+
+.firma-panel { margin-top: 4px; }
+
+/* ── Preview de imagen (firma desde archivo) ─────── */
+.firma-preview-img {
+  margin-top: 8px;
+  max-height: 120px;
+  border: 1px solid var(--color-gris-claro);
+  border-radius: var(--border-radius);
+  object-fit: contain;
+  display: none;
+}
+.firma-preview-img.visible { display: block; }
+
+/* ── Footer ───────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 18px 20px;
+  font-size: 12px;
+  color: var(--color-gris-medio);
+  border-top: 1px solid var(--color-gris-claro);
+  background: var(--color-blanco);
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 640px) {
+  .campos-grid { grid-template-columns: 1fr; }
+  #toast-container { left: 12px; right: 12px; bottom: 12px; }
+  .toast { min-width: unset; }
+  .banner__logos { gap: 6px; padding: 6px 0; }
+  .banner__logo { height: 38px; }
+  .banner__logo-placeholder { width: 70px; height: 38px; font-size: 9px; }
+}
+@media (max-width: 900px) and (min-width: 641px) {
+  .banner__logos { gap: 8px; }
+}
