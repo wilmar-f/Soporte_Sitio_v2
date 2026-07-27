@@ -212,7 +212,7 @@ const SEDES_CODIGOS = [
    3. DATOS EN MEMORIA (cargados desde backend)
    ══════════════════════════════════════════════════════ */
 let datosUsuarios   = [];  // [{cedula, nombreUsuario}]
-let datosInventario = [];  // [{serial, etiqueta}]
+let datosInventario = [];  // [{serial, etiqueta, fabricante, modelo}]
 
 /* ══════════════════════════════════════════════════════
    4. INICIALIZACIÓN
@@ -302,11 +302,60 @@ function buscarPorCedula(cedula) {
   return encontrado ? encontrado.nombreUsuario : null;
 }
 
-/** Busca etiqueta por serial (comparación case-insensitive) */
-function buscarPorSerial(serial) {
+/** Busca equipo por serial (comparación case-insensitive). Retorna objeto o null. */
+function buscarEquipoPorSerial(serial) {
   const limpio = serial.trim().toLowerCase();
-  const encontrado = datosInventario.find(e => String(e.serial).trim().toLowerCase() === limpio);
-  return encontrado ? encontrado.etiqueta : null;
+  const encontrado = datosInventario.find(
+    e => String(e.serial).trim().toLowerCase() === limpio
+  );
+  return encontrado || null;
+}
+
+/** Marca inputs de equipo como solo lectura (autocompletados por serial). */
+function bloquearCamposEquipo() {
+  ['marca', 'modelo', 'etiqueta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.readOnly = true;
+    el.style.background = 'var(--color-gris-fondo, #f0f4ff)';
+    el.style.cursor = 'default';
+  });
+}
+
+/** Limpia Marca, Modelo y Etiqueta tras cambio o serial no encontrado. */
+function limpiarCamposEquipo() {
+  ['marca', 'modelo', 'etiqueta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+/**
+ * Autocompleta Marca, Modelo y Etiqueta según serial.
+ * Marca y Modelo se normalizan a MAYÚSCULAS.
+ * @returns {boolean} true si el serial existe en inventario
+ */
+function autocompletarEquipoPorSerial(serial) {
+  const inputSerial = document.getElementById('serial');
+  const equipo = buscarEquipoPorSerial(serial);
+
+  if (!equipo) {
+    limpiarCamposEquipo();
+    if (inputSerial) marcarInvalido(inputSerial);
+    toast('El serial no existe en el inventario.', 'error');
+    return false;
+  }
+
+  document.getElementById('marca').value    = (equipo.fabricante || '').toUpperCase();
+  document.getElementById('modelo').value   = (equipo.modelo || '').toUpperCase();
+  document.getElementById('etiqueta').value = equipo.etiqueta || '';
+
+  ['marca', 'modelo', 'etiqueta', 'serial'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) limpiarInvalido(el);
+  });
+
+  return true;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -368,7 +417,7 @@ function renderFormularioDiagnostico() {
           </div>
           <div class="campo">
             <label for="marca">Marca *</label>
-            <input type="text" id="marca" name="marca" placeholder="Ej: HP, Lenovo, Dell…" required>
+            <input type="text" id="marca" name="marca" placeholder="Se autocompleta por serial" readonly required style="text-transform:uppercase;">
           </div>
           <div class="campo">
             <label for="serial">Serial *</label>
@@ -376,11 +425,11 @@ function renderFormularioDiagnostico() {
           </div>
           <div class="campo">
             <label for="modelo">Modelo *</label>
-            <input type="text" id="modelo" name="modelo" placeholder="Ej: EliteBook 840 G8" required>
+            <input type="text" id="modelo" name="modelo" placeholder="Se autocompleta por serial" readonly required style="text-transform:uppercase;">
           </div>
           <div class="campo">
             <label for="etiqueta">Etiqueta * <small>(exactamente 7 caracteres)</small></label>
-            <input type="text" id="etiqueta" name="etiqueta" placeholder="Se autocompleta por serial" maxlength="7" required>
+            <input type="text" id="etiqueta" name="etiqueta" placeholder="Se autocompleta por serial" maxlength="7" readonly required>
           </div>
           <div class="campo">
             <label for="procesador">Procesador</label>
@@ -536,6 +585,7 @@ function renderFormularioDiagnostico() {
 
   // Registrar todos los eventos del formulario
   registrarEventosFormulario();
+  bloquearCamposEquipo();
   // Si el usuario ingresó por Office 365, autocompletar campos del técnico
   autocompletarDatosTecnico();
 }
@@ -565,33 +615,15 @@ function registrarEventosFormulario() {
     }
   });
 
-  // Autocompletado: etiqueta por serial
+  // Autocompletado: Marca, Modelo y Etiqueta por serial
   const inputSerial = document.getElementById('serial');
   inputSerial.addEventListener('blur', () => {
     const serial = inputSerial.value.trim();
-    if (!serial) return;
-
-    const etiqueta = buscarPorSerial(serial);
-    const campoEtiqueta = document.getElementById('etiqueta');
-    if (etiqueta) {
-      campoEtiqueta.value = etiqueta;
-      limpiarInvalido(campoEtiqueta);
-    } else {
-      campoEtiqueta.value = '';
-      toast('No se encontró etiqueta para ese serial en el inventario.', 'info');
+    if (!serial) {
+      limpiarCamposEquipo();
+      return;
     }
-  });
-
-  // Validación de etiqueta: exactamente 7 caracteres (en blur)
-  const inputEtiqueta = document.getElementById('etiqueta');
-  inputEtiqueta.addEventListener('blur', () => {
-    const val = inputEtiqueta.value.trim();
-    if (val && val.length !== 7) {
-      marcarInvalido(inputEtiqueta);
-      toast('La Etiqueta debe tener exactamente 7 caracteres.', 'advertencia');
-    } else {
-      limpiarInvalido(inputEtiqueta);
-    }
+    autocompletarEquipoPorSerial(serial);
   });
 
   // ── Tabs firma ────────────────────────────────────
@@ -639,6 +671,8 @@ function registrarEventosFormulario() {
     if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     document.querySelectorAll('.invalido').forEach(el => el.classList.remove('invalido'));
     document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+    limpiarCamposEquipo();
+    bloquearCamposEquipo();
     // Re-aplicar datos técnico O365 que el reset() habrá borrado
     autocompletarDatosTecnico();
     toast('Formulario limpiado.', 'info');
@@ -803,6 +837,15 @@ function validarFormulario() {
     valido = false;
   }
 
+  // Validar que el serial exista en inventario (bloquea PDF si no existe)
+  const serialEl = document.getElementById('serial');
+  const serialVal = serialEl.value.trim();
+  if (serialVal && !buscarEquipoPorSerial(serialVal)) {
+    marcarInvalido(serialEl);
+    toast('El serial no existe en el inventario. No se puede generar el PDF.', 'error');
+    valido = false;
+  }
+
   if (!valido) {
     toast(
       `Completa los campos obligatorios: ${errores.slice(0, 3).join(', ')}${errores.length > 3 ? '…' : ''}.`,
@@ -848,9 +891,9 @@ function recopilarValores() {
     areaUsuario:       get('area-usuario'),
     cedula:            get('cedula-usuario'),
     ubicacionFisica:   get('ubicacion-fisica'),
-    marca:             get('marca'),
+    marca:             get('marca').toUpperCase(),
     serial:            get('serial'),
-    modelo:            get('modelo'),
+    modelo:            get('modelo').toUpperCase(),
     etiqueta:          get('etiqueta'),
     procesador:        get('procesador'),
     versionSO:         get('version-so'),

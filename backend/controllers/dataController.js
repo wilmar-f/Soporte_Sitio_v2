@@ -32,8 +32,8 @@ exports.getUsuarios = (req, res) => {
     });
 };
 
-// GET /api/inventario — lee inventario.csv y retorna [{serial, etiqueta}]
-// El CSV usa delimitador ';' y encabezados: Nº serie;Etiqueta
+// GET /api/inventario — lee inventario.csv y retorna [{serial, etiqueta, fabricante, modelo}]
+// El CSV usa delimitador ';' y encabezados: Nº serie;Etiqueta;Fabricante;Modelo
 exports.getInventario = (req, res) => {
   const results = [];
   fs.createReadStream(inventarioCSVPath, { encoding: 'utf8' })
@@ -43,12 +43,21 @@ exports.getInventario = (req, res) => {
         mapHeaders: ({ header, index }) => {
           if (index === 0) return 'serial';
           if (index === 1) return 'etiqueta';
+          if (index === 2) return 'fabricante';
+          if (index === 3) return 'modelo';
           return header.trim();
         }
       })
     )
     .on('data', row => {
-      if (row.serial) results.push({ serial: row.serial, etiqueta: row.etiqueta });
+      if (row.serial) {
+        results.push({
+          serial: row.serial,
+          etiqueta: row.etiqueta || '',
+          fabricante: row.fabricante || '',
+          modelo: row.modelo || '',
+        });
+      }
     })
     .on('end', () => res.json(results))
     .on('error', err => {
