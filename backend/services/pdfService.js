@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { renderDiagnosticoHtml } = require('../utils/renderDiagnostico');
 
 let browserPromise = null;
@@ -40,12 +40,33 @@ function getAvailableHeightPx() {
   return LETTER_HEIGHT_PX - top - bottom;
 }
 
+function isProductionEnv() {
+  return process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+}
+
+async function launchBrowser() {
+  if (isProductionEnv()) {
+    const chromium = require('@sparticuz/chromium');
+    chromium.setGraphicsMode = false;
+
+    return puppeteer.launch({
+      args: [...chromium.args, ...LAUNCH_ARGS],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  }
+
+  const puppeteerFull = require('puppeteer');
+  return puppeteerFull.launch({
+    headless: true,
+    args: LAUNCH_ARGS,
+  });
+}
+
 async function getBrowser() {
   if (!browserPromise) {
-    browserPromise = puppeteer.launch({
-      headless: true,
-      args: LAUNCH_ARGS,
-    }).catch((err) => {
+    browserPromise = launchBrowser().catch((err) => {
       browserPromise = null;
       throw err;
     });
