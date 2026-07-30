@@ -303,6 +303,159 @@ fieldset.seccion legend {
 }
 .firma-preview-img.visible { display: block; }
 
+/* ── Diagnóstico interactivo ─────────────────────── */
+.diagnostico-bloque {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-gris-claro);
+}
+.diagnostico-bloque:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.diagnostico-bloque.invalido {
+  outline: 2px solid var(--color-peligro);
+  outline-offset: 4px;
+  border-radius: var(--border-radius);
+}
+.diagnostico-paso {
+  margin-bottom: 14px;
+}
+.diagnostico-paso--deshabilitado {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.diagnostico-paso-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-texto);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-left: 10px;
+  border-left: 3px solid var(--color-primario);
+}
+.diagnostico-subseccion {
+  margin-bottom: 16px;
+}
+.diagnostico-check-group,
+.diagnostico-radio-group {
+  margin-top: 4px;
+}
+.diagnostico-check-group {
+  display: grid;
+  gap: 8px 12px;
+}
+.diagnostico-check-group--2col {
+  grid-template-columns: repeat(2, 1fr);
+}
+.diagnostico-check-group--3col {
+  grid-template-columns: repeat(3, 1fr);
+}
+.diagnostico-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.diagnostico-check,
+.diagnostico-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--color-texto);
+  cursor: pointer;
+  line-height: 1.4;
+}
+.diagnostico-check input,
+.diagnostico-radio input {
+  width: auto;
+  margin-top: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.diagnostico-preview-wrap {
+  margin-top: 12px;
+}
+.diagnostico-preview__label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-info);
+  margin-bottom: 6px;
+}
+.diagnostico-preview {
+  background: #F3F4F6;
+  border: 1px solid var(--color-gris-borde);
+  border-radius: var(--border-radius);
+  padding: 12px 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-texto);
+  min-height: 48px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+@media (max-width: 640px) {
+  .diagnostico-check-group--2col,
+  .diagnostico-check-group--3col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Vista previa plantilla (solo admin) ───────────── */
+.plantilla-preview-panel {
+  padding: 8px 4px 24px;
+}
+.plantilla-preview-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.plantilla-preview-toolbar__titulo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-texto);
+  margin: 0 0 4px;
+}
+.plantilla-preview-toolbar__nota {
+  font-size: 13px;
+  color: var(--color-gris-medio);
+  margin: 0;
+}
+.plantilla-preview-scroll {
+  overflow: auto;
+  max-height: calc(100vh - var(--banner-altura) - 140px);
+  padding-bottom: 8px;
+}
+.plantilla-preview-root {
+  width: 816px;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+.plantilla-preview-doc {
+  width: 816px;
+  margin: 0 auto;
+}
+.plantilla-preview-cargando,
+.plantilla-preview-error {
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-gris-medio);
+}
+.plantilla-preview-error {
+  color: var(--color-error, #c0392b);
+}
+
 /* ── Footer ───────────────────────────────────────── */
 footer {
   text-align: center;

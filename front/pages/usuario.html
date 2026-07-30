@@ -9,15 +9,6 @@
 
   <!-- MSAL.js v2 — requerido para cerrar sesión Office 365 correctamente -->
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-
-  <!-- PDF: html2canvas + jsPDF (generación 100% en el navegador, sin servidor) -->
-  <!-- Nota: Si en el futuro se requiere subir el PDF automáticamente a OneDrive/SharePoint,
-       eso requeriría implementar Microsoft Graph API con una app registrada en Azure AD,
-       lo cual queda fuera del alcance actual. -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-          referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-          referrerpolicy="no-referrer"></script>
 </head>
 <body>
   <header id="banner"></header>
@@ -39,6 +30,10 @@
           <span class="sidebar__btn-icono">📋</span>
           Diagnóstico
         </button>
+        <button class="sidebar__btn" id="btn-vista-previa" hidden>
+          <span class="sidebar__btn-icono">👁</span>
+          VISTA PREVIA FORMATO
+        </button>
         <button class="sidebar__btn sidebar__btn--peligro" id="btn-cerrar-sesion">
           <span class="sidebar__btn-icono">🚪</span>
           Cerrar Sesión
@@ -55,13 +50,6 @@
       </div>
     </section>
   </main>
-
-  <!-- Contenedor oculto para renderizar la plantilla antes de capturarla con html2canvas -->
-  <div
-    id="pdf-render"
-    aria-hidden="true"
-    style="position:fixed;left:-9999px;top:0;width:816px;background:#fff;z-index:-1;overflow:hidden;"
-  ></div>
 
   <footer>
     <p>&copy; 2024 Sistema de Diagnóstico en Sitio — Todos los derechos reservados</p>

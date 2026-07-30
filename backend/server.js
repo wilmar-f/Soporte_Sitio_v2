@@ -5,12 +5,13 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
+const pdfRoutes = require('./routes/pdf');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 
 // Serve front-end static files
 app.use(express.static(path.join(__dirname, '../front')));
@@ -18,6 +19,7 @@ app.use(express.static(path.join(__dirname, '../front')));
 // API routes
 app.use('/api', authRoutes);
 app.use('/api', dataRoutes);
+app.use('/api', pdfRoutes);
 
 // Root redirect to login page
 app.get('/', (req, res) => {

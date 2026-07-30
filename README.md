@@ -28,16 +28,25 @@ Desarrollado con HTML5 / CSS / JavaScript Vanilla en el frontend y Node.js (Expr
 │   ├── server.js
 │   ├── routes/
 │   │   ├── auth.js               ← POST /api/login
-│   │   └── data.js               ← GET /api/usuarios, /api/inventario, /api/template
+│   │   ├── data.js               ← GET /api/usuarios, /api/inventario, /api/template
+│   │   └── pdf.js                ← POST /api/generar-pdf
 │   ├── controllers/
 │   │   ├── authController.js
-│   │   └── dataController.js
+│   │   ├── dataController.js
+│   │   └── pdfController.js
+│   ├── services/
+│   │   └── pdfService.js         ← Puppeteer (PDF con texto seleccionable)
+│   ├── utils/
+│   │   └── renderDiagnostico.js  ← Handlebars + logos embebidos
+│   ├── middleware/
+│   │   └── authMiddleware.js     ← JWT (reservado para rutas futuras)
 │   ├── data/
 │   │   ├── usuarios.json         ← Credenciales de login (NO es el mismo que usuarios.csv)
 │   │   ├── usuarios.csv          ← Datos para autocompletar nombre por cédula
 │   │   └── inventario.csv        ← Datos para autocompletar etiqueta por serial
 │   ├── templates/
-│   │   └── diagnostico.template.html
+│   │   ├── diagnostico.template.html  ← Vista previa admin (GET /api/template)
+│   │   └── diagnostico.template.hbs   ← PDF servidor (Handlebars)
 │   └── package.json
 ├── .env
 ├── .gitignore
@@ -127,24 +136,25 @@ Los archivos CSV son leídos del disco en **cada petición** al endpoint, por lo
 | GET    | /api/usuarios     | Retorna `[{cedula, nombreUsuario}]` desde CSV  |
 | GET    | /api/inventario   | Retorna `[{serial, etiqueta}]` desde CSV       |
 | GET    | /api/template     | Retorna el HTML de la plantilla de diagnóstico |
+| POST   | /api/generar-pdf  | Genera PDF carta con Puppeteer. Body: campos del formulario + `firmaBase64` |
 
 ---
 
 ## Generación de PDF
 
-El PDF se genera **completamente en el navegador** sin participación del servidor:
+El PDF se genera en el **servidor** con **Puppeteer + Handlebars** (texto seleccionable, no imagen):
 
-1. Al hacer clic en **Generar PDF**, se valida el formulario.
-2. Se obtiene la plantilla HTML desde `/api/template`.
-3. Los placeholders `{{campo}}` se reemplazan con los valores del formulario.
-4. La plantilla rellena se inserta en un `<div>` oculto del DOM.
-5. `html2canvas` captura ese div como imagen.
-6. `jsPDF` construye el PDF a partir de la imagen y lo descarga.
-7. Nombre del archivo: `diagnostico_{{cedula}}_{{fecha}}.pdf`
+1. Al hacer clic en **Generar PDF**, se valida el formulario en el navegador.
+2. Los valores se envían por `POST` a `/api/generar-pdf` (JSON, límite 15 MB por la firma en base64).
+3. El backend compila `diagnostico.template.hbs` con Handlebars (logos embebidos en base64).
+4. Puppeteer renderiza el HTML, aplica **márgenes laterales** (~0.45 in) y **escala automática** para que todo quepa en **1 sola hoja carta**.
+5. El navegador descarga el archivo: `diagnostico_{{cedula}}_{{fecha}}.pdf`
 
-**Librerías CDN utilizadas:**
-- html2canvas 1.4.1
-- jsPDF 2.5.1
+La **vista previa del formato** (solo admin) sigue usando `diagnostico.template.html` vía `/api/template`.
+
+**Dependencias backend:** `puppeteer`, `handlebars`
+
+**Render Free:** Chromium añade ~300–400 MB RAM; el primer PDF tras un cold start puede tardar unos segundos. Para producción intensiva, considerar plan Starter.
 
 ---
 

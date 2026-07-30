@@ -1,7 +1,7 @@
 /**
  * usuario.js — Lógica principal del panel de usuario
  * Incluye: verificación de sesión, carga de datos CSV, formulario dinámico,
- * autocompletado, validaciones y generación de PDF (100% frontend).
+ * autocompletado, validaciones y generación de PDF vía Puppeteer en el servidor.
  *
  * NOTA FUTURA: Si se requiere subir el PDF automáticamente a OneDrive/SharePoint,
  * se deberá implementar Microsoft Graph API con una app registrada en Azure AD.
@@ -10,6 +10,13 @@
 import { renderBanner }      from './banner.js';
 import { toast }             from './toast.js';
 import { logoutOffice365 }   from './auth-office365.js';
+import {
+  renderDiagnosticoInteractivo,
+  initDiagnosticoInteractivo,
+  validarDiagnosticoInteractivo,
+  resetDiagnosticoInteractivo,
+} from './diagnostico-logica.js';
+import { renderPlantillaEnContenedor } from './plantilla-preview.js';
 
 /* ══════════════════════════════════════════════════════
    1. VERIFICACIÓN DE SESIÓN
@@ -248,6 +255,11 @@ function renderInfoUsuario() {
   } else {
     avatarEl.textContent = inicial;
   }
+
+  const btnVistaPrevia = document.getElementById('btn-vista-previa');
+  if (btnVistaPrevia) {
+    btnVistaPrevia.hidden = tipo !== 'admin';
+  }
 }
 
 /* ── Carga ambos CSVs al iniciar ───────────────────── */
@@ -273,10 +285,65 @@ async function cargarDatosIniciales() {
    ══════════════════════════════════════════════════════ */
 function registrarEventosSidebar() {
   document.getElementById('btn-diagnostico').addEventListener('click', () => {
+    activarBotonSidebar('btn-diagnostico');
     renderFormularioDiagnostico();
   });
 
+  const btnVistaPrevia = document.getElementById('btn-vista-previa');
+  if (btnVistaPrevia) {
+    btnVistaPrevia.addEventListener('click', () => {
+      activarBotonSidebar('btn-vista-previa');
+      renderVistaPreviaFormato();
+    });
+  }
+
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
+}
+
+function activarBotonSidebar(idActivo) {
+  document.querySelectorAll('.sidebar__btn:not(.sidebar__btn--peligro)').forEach(btn => {
+    btn.classList.toggle('sidebar__btn--activo', btn.id === idActivo);
+  });
+}
+
+async function renderVistaPreviaFormato() {
+  const panel = document.getElementById('panel-principal');
+  panel.innerHTML = `
+    <div class="plantilla-preview-panel">
+      <div class="plantilla-preview-toolbar">
+        <div>
+          <h2 class="plantilla-preview-toolbar__titulo">Vista previa del formato</h2>
+          <p class="plantilla-preview-toolbar__nota">Datos de ejemplo — no afecta el formulario de diagnóstico.</p>
+        </div>
+        <button type="button" class="btn btn--outline" id="btn-recargar-plantilla">Recargar plantilla</button>
+      </div>
+      <div class="plantilla-preview-scroll">
+        <div class="plantilla-preview-root" id="plantilla-preview-root">
+          <p class="plantilla-preview-cargando">Cargando plantilla…</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const root = document.getElementById('plantilla-preview-root');
+  const btnRecargar = document.getElementById('btn-recargar-plantilla');
+
+  async function cargarPreview() {
+    root.innerHTML = '<p class="plantilla-preview-cargando">Cargando plantilla…</p>';
+    if (btnRecargar) btnRecargar.disabled = true;
+    try {
+      await renderPlantillaEnContenedor(root);
+    } catch (err) {
+      console.error('Error cargando vista previa:', err);
+      root.innerHTML = `<p class="plantilla-preview-error">No se pudo cargar la plantilla: ${esc(String(err.message || err))}</p>`;
+      toast('No se pudo cargar la vista previa del formato.', 'error');
+    } finally {
+      if (btnRecargar) btnRecargar.disabled = false;
+    }
+  }
+
+  btnRecargar?.addEventListener('click', cargarPreview);
+  await cargarPreview();
 }
 
 function cerrarSesion() {
@@ -394,8 +461,8 @@ function renderFormularioDiagnostico() {
             <input type="number" id="cedula-usuario" name="cedulaUsuario" placeholder="Ej: 12345678" required>
           </div>
           <div class="campo">
-            <label for="nombre-usuario">Nombre usuario</label>
-            <input type="text" id="nombre-usuario" name="nombreUsuario" placeholder="Se autocompleta por cédula" readonly>
+            <label for="nombre-usuario">Nombre usuario *</label>
+            <input type="text" id="nombre-usuario" name="nombreUsuario" placeholder="Se autocompleta por cédula" readonly required>
           </div>
           <div class="campo campo-full">
             <label for="area-usuario">Área del usuario *</label>
@@ -432,8 +499,8 @@ function renderFormularioDiagnostico() {
             <input type="text" id="etiqueta" name="etiqueta" placeholder="Se autocompleta por serial" maxlength="7" readonly required>
           </div>
           <div class="campo">
-            <label for="procesador">Procesador</label>
-            <select id="procesador" name="procesador">
+            <label for="procesador">Procesador *</label>
+            <select id="procesador" name="procesador" required>
               <option value="">— Selecciona —</option>
               <option>INTEL CORE i5</option>
               <option>INTEL CORE i7</option>
@@ -442,8 +509,8 @@ function renderFormularioDiagnostico() {
             </select>
           </div>
           <div class="campo">
-            <label for="version-so">Versión SO</label>
-            <select id="version-so" name="versionSO">
+            <label for="version-so">Versión SO *</label>
+            <select id="version-so" name="versionSO" required>
               <option value="">— Selecciona —</option>
               <option>25H2</option>
               <option>24H2</option>
@@ -452,8 +519,8 @@ function renderFormularioDiagnostico() {
             </select>
           </div>
           <div class="campo">
-            <label for="ram">RAM</label>
-            <select id="ram" name="ram">
+            <label for="ram">RAM *</label>
+            <select id="ram" name="ram" required>
               <option value="">— Selecciona —</option>
               <option>8 GB</option>
               <option>16 GB</option>
@@ -463,12 +530,12 @@ function renderFormularioDiagnostico() {
             </select>
           </div>
           <div class="campo">
-            <label for="nombre-equipo">Nombre del equipo</label>
-            <input type="text" id="nombre-equipo" name="nombreEquipo" placeholder="Ej: DESK-ADMON-01">
+            <label for="nombre-equipo">Nombre del equipo *</label>
+            <input type="text" id="nombre-equipo" name="nombreEquipo" placeholder="Ej: DESK-ADMON-01" required>
           </div>
           <div class="campo">
-            <label for="sistema-operativo">Sistema Operativo</label>
-            <select id="sistema-operativo" name="sistemaOperativo">
+            <label for="sistema-operativo">Sistema Operativo *</label>
+            <select id="sistema-operativo" name="sistemaOperativo" required>
               <option value="">— Selecciona —</option>
               <option>WIN 11 PRO</option>
               <option>LINUX SUSE 15</option>
@@ -476,16 +543,16 @@ function renderFormularioDiagnostico() {
             </select>
           </div>
           <div class="campo">
-            <label for="version-office">Versión de Office</label>
-            <select id="version-office" name="versionOffice">
+            <label for="version-office">Versión de Office *</label>
+            <select id="version-office" name="versionOffice" required>
               <option value="">— Selecciona —</option>
               <option>Office 365</option>
               <option>No Aplica</option>
             </select>
           </div>
           <div class="campo">
-            <label for="hd">HD</label>
-            <select id="hd" name="hd">
+            <label for="hd">HD *</label>
+            <select id="hd" name="hd" required>
               <option value="">— Selecciona —</option>
               <option>256 GB</option>
               <option>512 GB</option>
@@ -501,12 +568,12 @@ function renderFormularioDiagnostico() {
         <legend>Aplicaciones</legend>
         <div class="campos-grid">
           <div class="campo">
-            <label for="apps-mayor-uso">Aplicaciones de mayor uso</label>
-            <input type="text" id="apps-mayor-uso" name="appsMayorUso" placeholder="Ej: SAP, Chrome, Office…">
+            <label for="apps-mayor-uso">Aplicaciones de mayor uso *</label>
+            <input type="text" id="apps-mayor-uso" name="appsMayorUso" placeholder="Ej: SAP, Chrome, Office…" required>
           </div>
           <div class="campo">
-            <label for="apps-fuera-estandar">Aplicaciones Fuera del Estandar</label>
-            <input type="text" id="apps-fuera-estandar" name="appsFueraEstandar" placeholder="Ej: Dropbox, TeamViewer…">
+            <label for="apps-fuera-estandar">Aplicaciones Fuera del Estandar *</label>
+            <input type="text" id="apps-fuera-estandar" name="appsFueraEstandar" placeholder="Ej: Dropbox, TeamViewer…" required>
           </div>
         </div>
       </fieldset>
@@ -514,21 +581,7 @@ function renderFormularioDiagnostico() {
       <!-- ═══════════ SECCIÓN: DIAGNÓSTICO ══════════════════════ -->
       <fieldset class="seccion">
         <legend>Diagnóstico</legend>
-        <div class="campo">
-          <label for="descripcion-falla">Descripción de la falla *</label>
-          <textarea id="descripcion-falla" name="descripcionFalla" rows="3"
-            placeholder="Describa detalladamente la falla que presenta el equipo…" required></textarea>
-        </div>
-        <div class="campo">
-          <label for="acciones-realizadas">Acciones realizadas *</label>
-          <textarea id="acciones-realizadas" name="accionesRealizadas" rows="3"
-            placeholder="Describa las acciones tomadas para tratar de solucionar la falla…" required></textarea>
-        </div>
-        <div class="campo">
-          <label for="diagnostico-final">Diagnóstico final *</label>
-          <textarea id="diagnostico-final" name="diagnosticoFinal" rows="3"
-            placeholder="Describa el diagnóstico luego de las acciones realizadas…" required></textarea>
-        </div>
+        ${renderDiagnosticoInteractivo()}
       </fieldset>
 
       <!-- ═══════════ SECCIÓN: DATOS DEL TÉCNICO ════════════════ -->
@@ -626,6 +679,8 @@ function registrarEventosFormulario() {
     autocompletarEquipoPorSerial(serial);
   });
 
+  initDiagnosticoInteractivo();
+
   // ── Tabs firma ────────────────────────────────────
   document.getElementById('tab-dibujar').addEventListener('click', () => {
     document.getElementById('panel-dibujar').style.display = '';
@@ -673,6 +728,7 @@ function registrarEventosFormulario() {
     document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
     limpiarCamposEquipo();
     bloquearCamposEquipo();
+    resetDiagnosticoInteractivo();
     // Re-aplicar datos técnico O365 que el reset() habrá borrado
     autocompletarDatosTecnico();
     toast('Formulario limpiado.', 'info');
@@ -802,14 +858,22 @@ function validarFormulario() {
   const requeridos = [
     { id: 'sede',              nombre: 'Sede' },
     { id: 'cedula-usuario',    nombre: 'Cédula usuario' },
+    { id: 'nombre-usuario',    nombre: 'Nombre usuario' },
     { id: 'area-usuario',      nombre: 'Área del usuario' },
+    { id: 'ubicacion-fisica',  nombre: 'Ubicación física' },
     { id: 'marca',             nombre: 'Marca' },
     { id: 'serial',            nombre: 'Serial' },
     { id: 'modelo',            nombre: 'Modelo' },
     { id: 'etiqueta',          nombre: 'Etiqueta' },
-    { id: 'descripcion-falla', nombre: 'Descripción de la falla' },
-    { id: 'acciones-realizadas', nombre: 'Acciones realizadas' },
-    { id: 'diagnostico-final', nombre: 'Diagnóstico final' },
+    { id: 'procesador',        nombre: 'Procesador' },
+    { id: 'version-so',        nombre: 'Versión SO' },
+    { id: 'ram',               nombre: 'RAM' },
+    { id: 'nombre-equipo',     nombre: 'Nombre del equipo' },
+    { id: 'sistema-operativo', nombre: 'Sistema Operativo' },
+    { id: 'version-office',    nombre: 'Versión de Office' },
+    { id: 'hd',                nombre: 'HD' },
+    { id: 'apps-mayor-uso',    nombre: 'Aplicaciones de mayor uso' },
+    { id: 'apps-fuera-estandar', nombre: 'Aplicaciones fuera del estándar' },
     { id: 'nombre-tecnico',    nombre: 'Nombre técnico' },
     { id: 'cedula-tecnico',    nombre: 'Cédula técnico' },
     { id: 'cargo-tecnico',     nombre: 'Cargo técnico' },
@@ -843,6 +907,16 @@ function validarFormulario() {
   if (serialVal && !buscarEquipoPorSerial(serialVal)) {
     marcarInvalido(serialEl);
     toast('El serial no existe en el inventario. No se puede generar el PDF.', 'error');
+    valido = false;
+  }
+
+  const diagVal = validarDiagnosticoInteractivo();
+  if (!diagVal.valido) {
+    ['diag-bloque-descripcion', 'diag-bloque-acciones'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('invalido');
+    });
+    toast(diagVal.mensaje, 'error');
     valido = false;
   }
 
@@ -921,168 +995,55 @@ function recopilarValores() {
 }
 
 /* ══════════════════════════════════════════════════════
-   11. GENERACIÓN DE PDF (100% FRONTEND)
+   11. GENERACIÓN DE PDF (servidor — Puppeteer + Handlebars)
    ══════════════════════════════════════════════════════ */
-
-/** Extrae estilos y contenido del body de la plantilla HTML completa */
-function parseTemplateHTML(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const styles = [...doc.querySelectorAll('style')]
-    .map(s => s.textContent)
-    .join('\n');
-  return { styles, bodyHTML: doc.body.innerHTML };
-}
-
-/** Espera a que todas las imágenes del contenedor terminen de cargar */
-function esperarImagenes(container) {
-  const imgs = [...container.querySelectorAll('img')];
-  return Promise.all(
-    imgs.map(img => {
-      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-      return new Promise(resolve => {
-        img.onload = resolve;
-        img.onerror = resolve;
-      });
-    })
-  );
-}
-
-/** Convierte imágenes locales a base64 para evitar errores de canvas con html2canvas */
-async function embeberImagenesBase64(container) {
-  const imgs = [...container.querySelectorAll('img')];
-  for (const img of imgs) {
-    const src = img.getAttribute('src');
-    if (!src || src.startsWith('data:')) continue;
-    try {
-      const url = src.startsWith('http') ? src : new URL(src, window.location.origin).href;
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const blob = await res.blob();
-      img.src = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      console.warn('No se pudo embeber imagen:', src, e);
-      img.style.display = 'none';
-    }
-  }
-}
-
-/** Ancho en px de hoja Carta a 96dpi (8.5in × 96dpi = 816px) */
-const LETTER_WIDTH_PX = 816;
 
 async function generarPDF() {
   if (!validarFormulario()) return;
-
-  if (typeof html2canvas !== 'function') {
-    toast('No se cargó la librería html2canvas. Recarga la página o verifica tu conexión.', 'error');
-    return;
-  }
-  if (!window.jspdf?.jsPDF) {
-    toast('No se cargó la librería jsPDF. Recarga la página o verifica tu conexión.', 'error');
-    return;
-  }
 
   const btnGenerar = document.getElementById('btn-generar');
   btnGenerar.disabled = true;
   btnGenerar.textContent = 'Generando PDF…';
 
-  const renderDiv = document.getElementById('pdf-render');
-
   try {
-    const resTemplate = await fetch('/api/template');
-    if (!resTemplate.ok) throw new Error('No se pudo cargar la plantilla');
-    const templateHTML = await resTemplate.text();
-
     const valores = recopilarValores();
-    const htmlRelleno = reemplazarPlaceholders(templateHTML, valores);
-    const { styles, bodyHTML } = parseTemplateHTML(htmlRelleno);
+    const headers = { 'Content-Type': 'application/json' };
+    if (tokenGuardado) {
+      headers.Authorization = `Bearer ${tokenGuardado}`;
+    }
 
-    renderDiv.style.width = `${LETTER_WIDTH_PX}px`;
-    renderDiv.style.height = 'auto';
-    renderDiv.style.overflow = 'hidden';
-    renderDiv.innerHTML = `<style>${styles}</style>${bodyHTML}`;
-
-    await embeberImagenesBase64(renderDiv);
-    await esperarImagenes(renderDiv);
-    await new Promise(r => setTimeout(r, 250));
-
-    const contentHeight = renderDiv.scrollHeight;
-
-    const canvas = await html2canvas(renderDiv, {
-      scale: 1.5,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      backgroundColor: '#ffffff',
-      width: LETTER_WIDTH_PX,
-      height: contentHeight,
-      windowWidth: LETTER_WIDTH_PX,
-      windowHeight: contentHeight,
+    const res = await fetch('/api/generar-pdf', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(valores),
     });
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
-
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgData = canvas.toDataURL('image/jpeg', 0.92);
-
-    // Escalar para que TODO el contenido quepa en UNA sola hoja carta
-    let drawW = pageW;
-    let drawH = (canvas.height * pageW) / canvas.width;
-    if (drawH > pageH) {
-      const ratio = pageH / drawH;
-      drawW = drawW * ratio;
-      drawH = pageH;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Error ${res.status}`);
     }
-    const offsetX = (pageW - drawW) / 2;
 
-    pdf.addImage(imgData, 'JPEG', offsetX, 0, drawW, drawH);
-
+    const blob = await res.blob();
     const fechaStr = valores.fecha.replace(/-/g, '');
-    pdf.save(`diagnostico_${valores.cedula || 'sin_cedula'}_${fechaStr}.pdf`);
+    const filename = `diagnostico_${valores.cedula || 'sin_cedula'}_${fechaStr}.pdf`;
 
-    renderDiv.innerHTML = '';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
     toast('PDF generado y descargado correctamente.', 'exito');
-
   } catch (err) {
     console.error('Error generando PDF:', err);
-    renderDiv.innerHTML = '';
     toast(`Error al generar el PDF: ${err.message || 'Intenta de nuevo.'}`, 'error');
   } finally {
     btnGenerar.disabled = false;
     btnGenerar.textContent = 'Generar PDF';
   }
-}
-
-/* ── Reemplaza todos los placeholders {{campo}} ──── */
-function reemplazarPlaceholders(html, valores) {
-  return html.replace(/\{\{(\w+)\}\}/g, (_, clave) => {
-    const val = valores[clave];
-    if (val === undefined || val === null) return '';
-
-    // La firma se inserta como un elemento <img> HTML
-    if (clave === 'firmaBase64') {
-      return val
-        ? `<img src="${val}" style="max-height:80px;max-width:200px;object-fit:contain;" alt="Firma">`
-        : '';
-    }
-
-    // Los demás valores se escapan para evitar que rompa el HTML de la plantilla
-    return escHtml(String(val));
-  });
-}
-
-/* ── Escapa caracteres HTML para inserción segura en plantilla ── */
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 /* ── Escapa HTML para valores en elementos del DOM (opciones de select) ── */
