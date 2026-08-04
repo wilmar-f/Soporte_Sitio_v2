@@ -23,12 +23,14 @@
 
       <form id="login-form" class="login-form" novalidate>
         <div class="campo">
-          <label for="usuario">Usuario</label>
+          <label for="usuario">Cédula</label>
           <input
             type="text"
             id="usuario"
             name="usuario"
-            placeholder="Ingresa tu usuario"
+            inputmode="numeric"
+            pattern="[0-9]+"
+            placeholder="Ingresa tu número de cédula"
             autocomplete="username"
             required
           >

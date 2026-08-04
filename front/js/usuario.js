@@ -18,6 +18,9 @@ import {
 } from './diagnostico-logica.js';
 import { renderPlantillaEnContenedor } from './plantilla-preview.js';
 
+const MAX_EVIDENCIAS = 4;
+let evidenciasAdjuntas = [];
+
 /* ══════════════════════════════════════════════════════
    1. VERIFICACIÓN DE SESIÓN
    ══════════════════════════════════════════════════════ */
@@ -234,7 +237,7 @@ function renderInfoUsuario() {
   const { nombreCompleto, correo, rol, fotoPerfil, loginType: tipo } = usuarioActual;
 
   document.getElementById('user-nombre').textContent = nombreCompleto || '—';
-  document.getElementById('user-correo').textContent = correo        || '—';
+  document.getElementById('user-correo').textContent = correo || usuarioActual.cedula || '—';
   document.getElementById('user-rol').textContent    = rol           || 'Usuario';
 
   const avatarEl = document.getElementById('user-avatar');
@@ -584,6 +587,17 @@ function renderFormularioDiagnostico() {
         ${renderDiagnosticoInteractivo()}
       </fieldset>
 
+      <!-- ═══════════ SECCIÓN: EVIDENCIAS (opcional) ═══════════ -->
+      <fieldset class="seccion">
+        <legend>Evidencias de falla (opcional)</legend>
+        <div class="campo campo-full">
+          <label for="evidencias-input">Adjuntar imágenes (máx. 4)</label>
+          <input type="file" id="evidencias-input" accept="image/*" multiple>
+          <p class="evidencias-ayuda">Se redimensionan a 400px y aparecen en una página adicional del PDF.</p>
+          <div class="evidencias-preview" id="evidencias-preview"></div>
+        </div>
+      </fieldset>
+
       <!-- ═══════════ SECCIÓN: DATOS DEL TÉCNICO ════════════════ -->
       <fieldset class="seccion">
         <legend>Datos del Técnico</legend>
@@ -639,7 +653,7 @@ function renderFormularioDiagnostico() {
   // Registrar todos los eventos del formulario
   registrarEventosFormulario();
   bloquearCamposEquipo();
-  // Si el usuario ingresó por Office 365, autocompletar campos del técnico
+  initEvidenciasInput();
   autocompletarDatosTecnico();
 }
 
@@ -729,7 +743,8 @@ function registrarEventosFormulario() {
     limpiarCamposEquipo();
     bloquearCamposEquipo();
     resetDiagnosticoInteractivo();
-    // Re-aplicar datos técnico O365 que el reset() habrá borrado
+    evidenciasAdjuntas = [];
+    renderEvidenciasPreview();
     autocompletarDatosTecnico();
     toast('Formulario limpiado.', 'info');
   });
@@ -810,38 +825,130 @@ function limpiarInvalido(el) {
 }
 
 /* ══════════════════════════════════════════════════════
-   AUTOCOMPLETADO DATOS TÉCNICO (Office 365)
+   AUTOCOMPLETADO DATOS TÉCNICO (Excel / Office 365)
    ══════════════════════════════════════════════════════ */
 
+function bloquearCampoTecnico(id, valor, bloquear) {
+  const el = document.getElementById(id);
+  if (!el || !bloquear) return;
+  el.value = valor ?? '';
+  el.readOnly = true;
+  el.style.background = 'var(--color-gris-fondo, #f5f5f5)';
+  el.style.cursor = 'default';
+}
+
 /**
- * Si el usuario ingresó por Office 365, autocompleta y bloquea los campos
- * "Nombre técnico", "Cédula técnico" y "Cargo técnico" con los datos de
- * sessionStorage.
- * Reglas:
- *   - cedulaTecnico vacía  → campo editable y vacío (correo sin formato numérico)
- *   - cargoTecnico null    → campo editable y vacío (jobTitle no reportado por Graph)
+ * Autocompleta y bloquea nombre, cédula y cargo del técnico según sesión.
  */
 function autocompletarDatosTecnico() {
-  if (usuarioActual.loginType !== 'office365') return;
+  let campos = [];
 
-  const { nombreCompleto, cedulaTecnico, cargoTecnico } = usuarioActual;
-
-  const campos = [
-    { id: 'nombre-tecnico', valor: nombreCompleto, bloquear: !!nombreCompleto },
-    { id: 'cedula-tecnico', valor: cedulaTecnico,  bloquear: !!cedulaTecnico  },
-    { id: 'cargo-tecnico',  valor: cargoTecnico,   bloquear: !!cargoTecnico   },
-  ];
+  if (usuarioActual.loginType === 'office365') {
+    const { nombreCompleto, cedulaTecnico, cargoTecnico } = usuarioActual;
+    campos = [
+      { id: 'nombre-tecnico', valor: nombreCompleto, bloquear: !!nombreCompleto },
+      { id: 'cedula-tecnico', valor: cedulaTecnico, bloquear: !!cedulaTecnico },
+      { id: 'cargo-tecnico', valor: cargoTecnico, bloquear: !!cargoTecnico },
+    ];
+  } else if (usuarioActual.loginType === 'admin') {
+    campos = [
+      { id: 'nombre-tecnico', valor: usuarioActual.nombreCompleto || '', bloquear: true },
+      { id: 'cedula-tecnico', valor: usuarioActual.cedula || '', bloquear: true },
+      { id: 'cargo-tecnico', valor: usuarioActual.cargo || '', bloquear: true },
+    ];
+  }
 
   campos.forEach(({ id, valor, bloquear }) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (bloquear) {
-      el.value    = valor;
-      el.readOnly = true;
-      el.style.background = 'var(--color-gris-fondo, #f5f5f5)';
-      el.style.cursor     = 'default';
+    bloquearCampoTecnico(id, valor ?? '', bloquear);
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   EVIDENCIAS DE FALLA (opcional)
+   ══════════════════════════════════════════════════════ */
+
+function redimensionarImagen(file, maxSize = 400) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const ratio = Math.min(maxSize / width, maxSize / height, 1);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('imagen_invalida'));
+    };
+    img.src = url;
+  });
+}
+
+function renderEvidenciasPreview() {
+  const container = document.getElementById('evidencias-preview');
+  if (!container) return;
+
+  if (!evidenciasAdjuntas.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = evidenciasAdjuntas.map((ev, i) => `
+    <div class="evidencia-thumb">
+      <img src="${ev.dataUrl}" alt="${ev.name}">
+      <button type="button" class="evidencia-quitar" data-idx="${i}" aria-label="Quitar imagen">×</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.evidencia-quitar').forEach(btn => {
+    btn.addEventListener('click', () => {
+      evidenciasAdjuntas.splice(Number(btn.dataset.idx), 1);
+      renderEvidenciasPreview();
+    });
+  });
+}
+
+function initEvidenciasInput() {
+  const input = document.getElementById('evidencias-input');
+  if (!input || input.dataset.bound === '1') return;
+  input.dataset.bound = '1';
+
+  input.addEventListener('change', async () => {
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (!files.length) return;
+
+    const espacio = MAX_EVIDENCIAS - evidenciasAdjuntas.length;
+    if (espacio <= 0) {
+      toast('Máximo 4 imágenes de evidencia.', 'advertencia');
+      return;
     }
-    // Si valor está vacío/null → dejar el campo editable sin modificar
+
+    const aProcesar = files.slice(0, espacio);
+    if (files.length > espacio) {
+      toast(`Solo se agregaron ${espacio} imagen(es). Máximo 4.`, 'advertencia');
+    }
+
+    for (const file of aProcesar) {
+      if (!file.type.startsWith('image/')) {
+        toast(`${file.name} no es una imagen válida.`, 'advertencia');
+        continue;
+      }
+      try {
+        const dataUrl = await redimensionarImagen(file);
+        evidenciasAdjuntas.push({ name: file.name, dataUrl });
+      } catch {
+        toast(`No se pudo procesar ${file.name}.`, 'error');
+      }
+    }
+    renderEvidenciasPreview();
   });
 }
 
@@ -991,6 +1098,7 @@ function recopilarValores() {
     testFabricanteResultado: '',
     intercambioPartes:       '',
     razonSolicitud:          '',
+    evidencias: evidenciasAdjuntas.map(ev => ev.dataUrl),
   };
 }
 

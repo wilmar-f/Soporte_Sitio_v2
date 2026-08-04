@@ -37,16 +37,19 @@ Desarrollado con HTML5 / CSS / JavaScript Vanilla en el frontend y Node.js (Expr
 │   ├── services/
 │   │   └── pdfService.js         ← Puppeteer (PDF con texto seleccionable)
 │   ├── utils/
-│   │   └── renderDiagnostico.js  ← Handlebars + logos embebidos
+│   │   ├── renderDiagnostico.js  ← Handlebars + logos embebidos
+│   │   ├── readTecnicos.js       ← Login técnicos desde Excel
+│   │   └── renderEvidencias.js   ← Página 2 PDF evidencias
 │   ├── middleware/
 │   │   └── authMiddleware.js     ← JWT (reservado para rutas futuras)
 │   ├── data/
-│   │   ├── usuarios.json         ← Credenciales de login (NO es el mismo que usuarios.csv)
+│   │   ├── tecnicos.xlsx         ← Cédula, contraseña, nombre y cargo (login)
 │   │   ├── usuarios.csv          ← Datos para autocompletar nombre por cédula
 │   │   └── inventario.csv        ← Datos para autocompletar etiqueta por serial
 │   ├── templates/
 │   │   ├── diagnostico.template.html  ← Vista previa admin (GET /api/template)
-│   │   └── diagnostico.template.hbs   ← PDF servidor (Handlebars)
+│   │   ├── diagnostico.template.hbs   ← PDF servidor (Handlebars)
+│   │   └── evidencias.template.hbs    ← Página 2 PDF (imágenes)
 │   └── package.json
 ├── .env
 ├── .gitignore
@@ -57,15 +60,33 @@ Desarrollado con HTML5 / CSS / JavaScript Vanilla en el frontend y Node.js (Expr
 
 ---
 
-## Credenciales por defecto
+## Login de técnicos (Excel)
 
-| Campo    | Valor         |
-|----------|---------------|
-| Usuario  | Admin         |
-| Contraseña | 123456      |
-| Rol      | Administrador |
+El ingreso usa **cédula + contraseña** definidas en [`backend/data/tecnicos.xlsx`](backend/data/tecnicos.xlsx).
 
-> Para agregar más usuarios, editar `/backend/data/usuarios.json`.
+| Columna | Descripción |
+|---------|-------------|
+| Cédula | Número de cédula del técnico (usuario de login) |
+| Contraseña | Clave de acceso |
+| Nombre | Nombre completo (se autocompleta en "Datos del técnico") |
+| Cargo | Cargo del técnico (se autocompleta y bloquea en el formulario) |
+
+> Reemplaza `tecnicos.xlsx` con el archivo real de tu equipo y vuelve a desplegar. Las contraseñas se almacenan en texto plano dentro del archivo — no expongas ese archivo públicamente.
+
+Para generar un archivo de ejemplo:
+
+```bash
+cd backend
+node scripts/init-tecnicos-xlsx.js
+```
+
+### PDF — datos del técnico
+
+En el pie del PDF, **nombre** y **cargo** se muestran en Title Case (ej. `Wilmar Franco`, `Soporte En Sitio`).
+
+### Evidencias de falla (opcional)
+
+En el formulario puedes adjuntar hasta **4 imágenes**. Se redimensionan a 400px y se agregan en una **segunda página** del PDF con el encabezado del formato (logo + código FR-BAI09.11).
 
 ---
 

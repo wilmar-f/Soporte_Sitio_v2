@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer-core');
+const { PDFDocument } = require('pdf-lib');
 const { renderDiagnosticoHtml } = require('../utils/renderDiagnostico');
+const { renderEvidenciasHtml } = require('../utils/renderEvidencias');
 
 let browserPromise = null;
 
@@ -85,19 +87,10 @@ async function closeBrowser() {
 process.on('SIGTERM', () => { closeBrowser().catch(() => {}); });
 process.on('SIGINT', () => { closeBrowser().catch(() => {}); });
 
-/**
- * Genera PDF carta con texto seleccionable desde datos del formulario.
- * Escala el contenido para que quepa en una sola hoja.
- * @param {object} datos — mismos campos que recopilarValores() en el front
- * @returns {Promise<Buffer>}
- */
-async function generarPdfDiagnostico(datos) {
-  const html = renderDiagnosticoHtml(datos);
+async function htmlToPdfBuffer(html, { autoScale = false } = {}) {
   const browser = await getBrowser();
   const page = await browser.newPage();
-
   const contentWidth = getContentWidthPx();
-  const availableHeight = getAvailableHeightPx();
 
   try {
     await page.setViewport({
@@ -111,8 +104,11 @@ async function generarPdfDiagnostico(datos) {
       timeout: 60000,
     });
 
-    const contentHeight = await page.evaluate(() => document.body.scrollHeight);
-    const scale = Math.min(1, availableHeight / contentHeight);
+    let scale = 1;
+    if (autoScale) {
+      const contentHeight = await page.evaluate(() => document.body.scrollHeight);
+      scale = Math.min(1, getAvailableHeightPx() / contentHeight);
+    }
 
     const pdfBuffer = await page.pdf({
       format: 'letter',
@@ -126,6 +122,38 @@ async function generarPdfDiagnostico(datos) {
   } finally {
     await page.close();
   }
+}
+
+async function mergePdfBuffers(buffers) {
+  const merged = await PDFDocument.create();
+  for (const buf of buffers) {
+    const doc = await PDFDocument.load(buf);
+    const indices = doc.getPageIndices();
+    const pages = await merged.copyPages(doc, indices);
+    pages.forEach(page => merged.addPage(page));
+  }
+  return Buffer.from(await merged.save());
+}
+
+/**
+ * Genera PDF carta con texto seleccionable desde datos del formulario.
+ * Si hay evidencias, agrega una segunda página con imágenes.
+ * @param {object} datos — mismos campos que recopilarValores() en el front
+ * @returns {Promise<Buffer>}
+ */
+async function generarPdfDiagnostico(datos) {
+  const mainBuffer = await htmlToPdfBuffer(renderDiagnosticoHtml(datos), { autoScale: true });
+
+  const evidencias = Array.isArray(datos.evidencias)
+    ? datos.evidencias.filter(src => typeof src === 'string' && src.startsWith('data:'))
+    : [];
+
+  if (!evidencias.length) {
+    return mainBuffer;
+  }
+
+  const evBuffer = await htmlToPdfBuffer(renderEvidenciasHtml(evidencias), { autoScale: false });
+  return mergePdfBuffers([mainBuffer, evBuffer]);
 }
 
 module.exports = {

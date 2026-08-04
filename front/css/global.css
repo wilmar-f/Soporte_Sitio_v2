@@ -406,6 +406,49 @@ fieldset.seccion legend {
   }
 }
 
+/* ── Evidencias de falla ───────────────────────────── */
+.evidencias-ayuda {
+  font-size: 12px;
+  color: var(--color-texto-suave);
+  margin-top: 6px;
+}
+.evidencias-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.evidencia-thumb {
+  position: relative;
+  border: 1.5px solid var(--color-gris-borde);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: #fff;
+}
+.evidencia-thumb img {
+  display: block;
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+}
+.evidencia-quitar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-peligro);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Vista previa plantilla (solo admin) ───────────── */
 .plantilla-preview-panel {
   padding: 8px 4px 24px;

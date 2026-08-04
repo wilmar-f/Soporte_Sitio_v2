@@ -29,7 +29,12 @@ form.addEventListener('submit', async (e) => {
   const contrasena = document.getElementById('contrasena').value;
 
   if (!usuario || !contrasena) {
-    toast('Por favor completa usuario y contraseña.', 'advertencia');
+    toast('Por favor completa cédula y contraseña.', 'advertencia');
+    return;
+  }
+
+  if (!/^\d+$/.test(usuario)) {
+    toast('La cédula debe contener solo números.', 'advertencia');
     return;
   }
 

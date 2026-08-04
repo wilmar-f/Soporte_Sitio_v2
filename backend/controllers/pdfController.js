@@ -8,6 +8,9 @@ exports.generarPdf = async (req, res) => {
       datos[key] = req.body[key] ?? '';
     }
     datos.firmaBase64 = req.body.firmaBase64 ?? '';
+    datos.evidencias = Array.isArray(req.body.evidencias)
+      ? req.body.evidencias.filter(src => typeof src === 'string' && src.startsWith('data:'))
+      : [];
 
     const pdfBuffer = await generarPdfDiagnostico(datos);
 

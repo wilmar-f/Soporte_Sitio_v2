@@ -40,12 +40,25 @@ function formatFechaPdf(val) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(val ?? '');
 }
 
+/** Primera letra de cada palabra en mayúscula (Title Case) */
+function toTitleCase(str) {
+  return String(str ?? '')
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 function prepareView(raw = {}) {
   const view = {};
   for (const key of CAMPOS_TEXTO) {
     view[key] = String(raw[key] ?? '');
   }
   view.fecha = formatFechaPdf(raw.fecha);
+  view.nombreTecnico = toTitleCase(view.nombreTecnico);
+  view.cargoTecnico = toTitleCase(view.cargoTecnico);
 
   const firma = raw.firmaBase64 && String(raw.firmaBase64).startsWith('data:')
     ? String(raw.firmaBase64)
