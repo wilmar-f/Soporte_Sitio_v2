@@ -62,7 +62,14 @@
   font-size: 12px;
   opacity: 0.65;
   word-break: break-all;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+}
+.sidebar__ultimo-acceso {
+  font-size: 11px;
+  opacity: 0.75;
+  font-style: italic;
+  line-height: 1.35;
+  margin-bottom: 8px;
 }
 .sidebar__rol {
   display: inline-block;

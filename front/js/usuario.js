@@ -17,6 +17,7 @@ import {
   resetDiagnosticoInteractivo,
 } from './diagnostico-logica.js';
 import { renderPlantillaEnContenedor } from './plantilla-preview.js';
+import { formatearUltimoAcceso } from './ultimo-acceso.js';
 
 const MAX_EVIDENCIAS = 4;
 let evidenciasAdjuntas = [];
@@ -233,12 +234,45 @@ cargarDatosIniciales();
 registrarEventosSidebar();
 
 /* ── Renderiza datos del usuario en el sidebar ─────── */
+function toTitleCase(str) {
+  return String(str ?? '')
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function obtenerCargoUsuario() {
+  if (usuarioActual.loginType === 'office365') {
+    return usuarioActual.cargoTecnico || usuarioActual.rol || '';
+  }
+  return usuarioActual.cargo || usuarioActual.rol || '';
+}
+
+function renderUltimoAccesoSidebar() {
+  const el = document.getElementById('user-ultimo-acceso');
+  if (!el) return;
+
+  const anterior = sessionStorage.getItem('ultimoAccesoAnterior');
+  if (!anterior) {
+    el.textContent = 'Primer ingreso en este equipo';
+    return;
+  }
+
+  const fmt = formatearUltimoAcceso(anterior);
+  el.textContent = fmt ? `Último acceso: ${fmt}` : '';
+}
+
 function renderInfoUsuario() {
-  const { nombreCompleto, correo, rol, fotoPerfil, loginType: tipo } = usuarioActual;
+  const { nombreCompleto, correo, fotoPerfil, loginType: tipo } = usuarioActual;
+  const cargo = toTitleCase(obtenerCargoUsuario());
 
   document.getElementById('user-nombre').textContent = nombreCompleto || '—';
   document.getElementById('user-correo').textContent = correo || usuarioActual.cedula || '—';
-  document.getElementById('user-rol').textContent    = rol           || 'Usuario';
+  document.getElementById('user-rol').textContent    = cargo || '—';
+  renderUltimoAccesoSidebar();
 
   const avatarEl = document.getElementById('user-avatar');
   const inicial  = (nombreCompleto || 'U').charAt(0).toUpperCase();

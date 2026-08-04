@@ -11,6 +11,7 @@
  * mostrará un error al intentar usarlo.
  */
 import { toast } from './toast.js';
+import { registrarUltimoAcceso } from './ultimo-acceso.js';
 
 /* ══════════════════════════════════════════════════════
    CONFIGURACIÓN MSAL
@@ -140,6 +141,8 @@ export async function loginConOffice365(btnElement) {
         fotoPerfil,
       })
     );
+
+    registrarUltimoAcceso(cedulaTecnico || parteLocal);
 
     toast('Sesión de Office 365 iniciada. Redirigiendo…', 'exito');
     setTimeout(() => { window.location.href = '/pages/usuario.html'; }, 900);

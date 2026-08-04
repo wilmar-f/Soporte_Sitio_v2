@@ -4,6 +4,7 @@
 import { renderBanner }       from './banner.js';
 import { toast }              from './toast.js';
 import { loginConOffice365 }  from './auth-office365.js';
+import { registrarUltimoAcceso } from './ultimo-acceso.js';
 
 // Inicializar banner
 renderBanner();
@@ -59,6 +60,7 @@ form.addEventListener('submit', async (e) => {
     sessionStorage.setItem('loginType', 'admin');
     sessionStorage.setItem('token',   data.token);
     sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
+    registrarUltimoAcceso(data.usuario?.cedula);
 
     toast('Acceso correcto. Redirigiendo…', 'exito');
 

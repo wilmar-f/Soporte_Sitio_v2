@@ -430,7 +430,7 @@ export function renderDiagnosticoInteractivo() {
           </div>
         </div>
         <div class="diagnostico-subseccion">
-          <span class="diagnostico-paso-label">¿Se requiere gestionar cotización con gestor de garantías?</span>
+          <span class="diagnostico-paso-label">¿Se requiere gestionar repuestos con Activos o cotización con gestor de garantías?</span>
           <div class="diagnostico-radio-group">
             ${renderRadioGroup('diag-final-cotizacion', siNo, 'diag-fc')}
           </div>
