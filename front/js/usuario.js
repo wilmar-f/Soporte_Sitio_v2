@@ -18,6 +18,7 @@ import {
 } from './diagnostico-logica.js';
 import { renderPlantillaEnContenedor } from './plantilla-preview.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
+import { renderPanelNoticias, esRolAdministrador } from './noticias.js';
 
 const MAX_EVIDENCIAS = 4;
 let evidenciasAdjuntas = [];
@@ -53,6 +54,10 @@ if (loginType === 'office365') {
   };
 } else {
   usuarioActual = { ...JSON.parse(usuarioGuardado), loginType: 'admin' };
+}
+
+function esAdministrador() {
+  return esRolAdministrador(usuarioActual.rol);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -297,6 +302,11 @@ function renderInfoUsuario() {
   if (btnVistaPrevia) {
     btnVistaPrevia.hidden = tipo !== 'admin';
   }
+
+  const btnNoticias = document.getElementById('btn-noticias');
+  if (btnNoticias) {
+    btnNoticias.hidden = !esAdministrador();
+  }
 }
 
 /* ── Carga ambos CSVs al iniciar ───────────────────── */
@@ -331,6 +341,14 @@ function registrarEventosSidebar() {
     btnVistaPrevia.addEventListener('click', () => {
       activarBotonSidebar('btn-vista-previa');
       renderVistaPreviaFormato();
+    });
+  }
+
+  const btnNoticias = document.getElementById('btn-noticias');
+  if (btnNoticias) {
+    btnNoticias.addEventListener('click', () => {
+      activarBotonSidebar('btn-noticias');
+      renderPanelNoticias(tokenGuardado);
     });
   }
 
@@ -1053,7 +1071,13 @@ function validarFormulario() {
 
   const diagVal = validarDiagnosticoInteractivo();
   if (!diagVal.valido) {
-    ['diag-bloque-descripcion', 'diag-bloque-acciones'].forEach(id => {
+    const bloques = ['diag-bloque-descripcion'];
+    if (document.getElementById('diag-tipo')?.value === 'DAAS') {
+      bloques.push('diag-bloque-daas');
+    } else {
+      bloques.push('diag-bloque-acciones');
+    }
+    bloques.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.add('invalido');
     });
@@ -1125,6 +1149,7 @@ function recopilarValores() {
     nombreTecnico:     get('nombre-tecnico'),
     cedulaTecnico:     get('cedula-tecnico'),
     cargoTecnico:      get('cargo-tecnico'),
+    tipoDiagnostico:   get('diag-tipo'),
     firmaBase64,
     // Campos del test de fabricante no capturados en este formulario
     testFabricanteRealizado: '',

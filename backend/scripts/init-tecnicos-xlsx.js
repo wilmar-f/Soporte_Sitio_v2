@@ -9,7 +9,13 @@ const XLSX = require('xlsx');
 const outPath = path.join(__dirname, '../data/tecnicos.xlsx');
 
 const rows = [
-  { Cédula: '12345678', Contraseña: 'abc123', Nombre: 'WILMAR FRANCO', Cargo: 'SOPORTE EN SITIO' },
+  {
+    Cédula: '12345678',
+    Contraseña: 'abc123',
+    Nombre: 'WILMAR FRANCO',
+    Cargo: 'SOPORTE EN SITIO',
+    Rol: 'Tecnico',
+  },
 ];
 
 const sheet = XLSX.utils.json_to_sheet(rows);

@@ -22,7 +22,7 @@ exports.login = (req, res) => {
 
   const secret = process.env.JWT_SECRET || 'secret_dev_fallback';
   const token = jwt.sign(
-    { cedula: tecnico.cedula, rol: 'Técnico' },
+    { cedula: tecnico.cedula, rol: tecnico.rol },
     secret,
     { expiresIn: '8h' }
   );
@@ -33,7 +33,7 @@ exports.login = (req, res) => {
       cedula: tecnico.cedula,
       nombreCompleto: tecnico.nombreCompleto,
       cargo: tecnico.cargo,
-      rol: 'Técnico',
+      rol: tecnico.rol,
     },
   });
 };

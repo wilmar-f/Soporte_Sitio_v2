@@ -2,8 +2,8 @@
  * diagnostico-logica.js — Selección interactiva para los 3 campos de diagnóstico.
  * Genera texto estandarizado para el PDF (sin texto libre del técnico).
  *
- * Alcance actual: ESTÁNDAR + DESKTOP/LAPTOP.
- * TODO: agregar flujos DAAS, OBSOLESCENCIA y demás tipos de activo.
+ * Alcance actual: ESTÁNDAR y DAAS + DESKTOP/LAPTOP.
+ * TODO: agregar flujos OBSOLESCENCIA y demás tipos de activo.
  */
 
 /* ══════════════════════════════════════════════════════
@@ -12,7 +12,7 @@
 
 export const TIPOS_DIAGNOSTICO = [
   { value: 'ESTANDAR', label: 'ESTÁNDAR', enabled: true },
-  { value: 'DAAS', label: 'DAAS', enabled: false },
+  { value: 'DAAS', label: 'DAAS', enabled: true },
   { value: 'OBSOLESCENCIA', label: 'OBSOLESCENCIA', enabled: false },
 ];
 
@@ -28,6 +28,21 @@ export const TIPOS_ACTIVO = [
   { value: 'ESCANER', label: 'ESCANER', enabled: false },
   { value: 'TABLET', label: 'TABLET', enabled: false },
   { value: 'VERIFICADOR_PRECIOS', label: 'VERIFICADOR PRECIOS', enabled: false },
+];
+
+export const DAAS_TEXTOS = {
+  descripcionFalla: 'El equipo hace parte de los equipos DAAS relacionados por fin de contrato.',
+  diagnosticoFinal: 'Se inicia el tramite de renovacion por finalizacion de contrato',
+  accionesBuenEstado: 'Se revisa el equipo y se encuentra en buen estado tanto en hardware como en software.',
+};
+
+export const DAAS_NOVEDADES = ['abolladura', 'golpe', 'rayones'];
+export const DAAS_UBICACIONES = ['pantalla', 'carcasa inferior', 'carcasa superior', 'bordes'];
+export const DAAS_ACCESORIOS = [
+  'cargador original',
+  'pantalla original',
+  'mouse original',
+  'teclado original',
 ];
 
 export const FALLAS_HARDWARE = [
@@ -97,6 +112,8 @@ export const REPUESTOS_AVERIADOS = [
   'Board/Tarjeta Principal',
 ];
 
+const ACTIVOS_DAAS = ['DESKTOP', 'LAPTOP'];
+
 /* ══════════════════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════════════════ */
@@ -149,9 +166,31 @@ function getRadioValue(name) {
   return el ? el.value : '';
 }
 
+function getTipoDiagnostico() {
+  return document.getElementById('diag-tipo')?.value || '';
+}
+
+function esModoDaas() {
+  return getTipoDiagnostico() === 'DAAS';
+}
+
+function esModoEstandar() {
+  return getTipoDiagnostico() === 'ESTANDAR';
+}
+
+function activoDaasOk() {
+  const tipoActivo = document.getElementById('diag-activo')?.value;
+  return ACTIVOS_DAAS.includes(tipoActivo);
+}
+
 function setPasoEnabled(el, enabled) {
   if (!el) return;
   el.classList.toggle('diagnostico-paso--deshabilitado', !enabled);
+}
+
+function setBloqueVisible(id, visible) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = visible ? '' : 'none';
 }
 
 function syncHidden(id, text) {
@@ -169,14 +208,20 @@ function setPreview(id, text) {
    ══════════════════════════════════════════════════════ */
 
 export function construirDescripcionFalla() {
-  const tipoDiag = document.getElementById('diag-tipo')?.value;
+  const tipoDiag = getTipoDiagnostico();
+
+  if (tipoDiag === 'DAAS') {
+    if (!activoDaasOk()) return '';
+    return DAAS_TEXTOS.descripcionFalla;
+  }
+
   const tipoActivo = document.getElementById('diag-activo')?.value;
   const tipoFalla = getRadioValue('diag-tipo-falla');
   const detalleHw = document.getElementById('diag-falla-hardware')?.value;
   const detalleSw = document.getElementById('diag-falla-software')?.value;
 
   if (tipoDiag !== 'ESTANDAR') return '';
-  if (!['DESKTOP', 'LAPTOP'].includes(tipoActivo)) return '';
+  if (!ACTIVOS_DAAS.includes(tipoActivo)) return '';
 
   let detalle = '';
   if (tipoFalla === 'HARDWARE') detalle = detalleHw;
@@ -186,7 +231,34 @@ export function construirDescripcionFalla() {
   return `Equipo presenta falla de ${detalle}.`;
 }
 
+function construirAccionesRealizadasDaas() {
+  if (!activoDaasOk()) return '';
+
+  const cosmeticas = getRadioValue('diag-daas-cosmeticas');
+  if (!cosmeticas) return '';
+
+  if (cosmeticas === 'no') {
+    return DAAS_TEXTOS.accionesBuenEstado;
+  }
+
+  const novedades = getCheckedLabels('diag-daas-novedades');
+  const ubicaciones = getCheckedLabels('diag-daas-ubicaciones');
+  const accesorios = getCheckedLabels('diag-daas-accesorios');
+
+  if (novedades.length === 0 || ubicaciones.length === 0) return '';
+
+  let texto = `Se revisa equipo y se fisicamente presenta ${unirLista(novedades)} en ${unirLista(ubicaciones)}.`;
+
+  if (accesorios.length > 0) {
+    texto += ` El equipo no cuenta con ${unirLista(accesorios)} del fabricante Hewlett-Packard`;
+  }
+
+  return texto;
+}
+
 export function construirAccionesRealizadas() {
+  if (esModoDaas()) return construirAccionesRealizadasDaas();
+
   const acciones = getCheckedLabels('diag-acciones');
   const partesChecked = getCheckedLabels('diag-partes');
   const ninguna = partesChecked.includes('NINGUNA');
@@ -206,6 +278,13 @@ export function construirAccionesRealizadas() {
 }
 
 export function construirDiagnosticoFinal() {
+  if (esModoDaas()) {
+    if (!activoDaasOk()) return '';
+    const cosmeticas = getRadioValue('diag-daas-cosmeticas');
+    if (!cosmeticas) return '';
+    return DAAS_TEXTOS.diagnosticoFinal;
+  }
+
   const o1 = getRadioValue('diag-final-solucionado');
   const o2 = getRadioValue('diag-final-cotizacion');
   const o5 = getRadioValue('diag-final-renovacion');
@@ -241,6 +320,46 @@ export function getValoresDiagnostico() {
 }
 
 export function validarDiagnosticoInteractivo() {
+  const tipoDiag = getTipoDiagnostico();
+
+  if (tipoDiag === 'DAAS') {
+    if (!activoDaasOk()) {
+      return {
+        valido: false,
+        mensaje: 'Seleccione tipo de activo (Desktop o Laptop) para diagnóstico DAAS.',
+      };
+    }
+
+    const cosmeticas = getRadioValue('diag-daas-cosmeticas');
+    if (!cosmeticas) {
+      return {
+        valido: false,
+        mensaje: 'Indique si el equipo tiene novedades cosméticas.',
+      };
+    }
+
+    if (cosmeticas === 'si') {
+      const novedades = getCheckedLabels('diag-daas-novedades');
+      const ubicaciones = getCheckedLabels('diag-daas-ubicaciones');
+      if (novedades.length === 0 || ubicaciones.length === 0) {
+        return {
+          valido: false,
+          mensaje: 'Indique al menos una novedad y una ubicación cosmética.',
+        };
+      }
+    }
+
+    const { descripcionFalla, accionesRealizadas, diagnosticoFinal } = getValoresDiagnostico();
+    if (!descripcionFalla || !accionesRealizadas || !diagnosticoFinal) {
+      return {
+        valido: false,
+        mensaje: 'Complete tipo de activo y revisión cosmética DAAS.',
+      };
+    }
+
+    return { valido: true, mensaje: '' };
+  }
+
   const { descripcionFalla, accionesRealizadas } = getValoresDiagnostico();
 
   if (!descripcionFalla || !accionesRealizadas) {
@@ -265,46 +384,75 @@ function actualizarDescripcionFalla() {
 
 function actualizarAccionesRealizadas() {
   const texto = construirAccionesRealizadas();
-  setPreview('preview-acciones-realizadas', texto);
+  const previewId = esModoDaas() ? 'preview-daas-acciones' : 'preview-acciones-realizadas';
+  setPreview(previewId, texto);
   syncHidden('acciones-realizadas', texto);
 }
 
 function actualizarDiagnosticoFinal() {
   const texto = construirDiagnosticoFinal();
-  setPreview('preview-diagnostico-final', texto);
+  const previewId = esModoDaas() ? 'preview-daas-final' : 'preview-diagnostico-final';
+  setPreview(previewId, texto);
   syncHidden('diagnostico-final', texto);
 }
 
-function actualizarCascadaCampo1() {
-  const tipoDiag = document.getElementById('diag-tipo')?.value;
+function actualizarDaasDetallesPanel() {
+  const panel = document.getElementById('diag-daas-detalles');
+  if (!panel) return;
+  panel.style.display = getRadioValue('diag-daas-cosmeticas') === 'si' ? '' : 'none';
+}
+
+function actualizarModoDiagnostico() {
+  const tipoDiag = getTipoDiagnostico();
+  const esDaas = tipoDiag === 'DAAS';
+  const esEstandar = tipoDiag === 'ESTANDAR';
+
   const paso2 = document.getElementById('diag-paso-activo');
   const paso3 = document.getElementById('diag-paso-tipo-falla');
   const paso4 = document.getElementById('diag-paso-detalle-falla');
 
-  const activoOk = tipoDiag === 'ESTANDAR';
-  setPasoEnabled(paso2, activoOk);
+  const activoHabilitado = esDaas || esEstandar;
+  setPasoEnabled(paso2, activoHabilitado);
 
   const tipoActivo = document.getElementById('diag-activo')?.value;
-  const activoSeleccionado = activoOk && ['DESKTOP', 'LAPTOP'].includes(tipoActivo);
-  setPasoEnabled(paso3, activoSeleccionado);
+  const activoSeleccionado = activoHabilitado && ACTIVOS_DAAS.includes(tipoActivo);
 
-  const tipoFalla = getRadioValue('diag-tipo-falla');
-  setPasoEnabled(paso4, activoSeleccionado && !!tipoFalla);
+  if (esEstandar) {
+    setPasoEnabled(paso3, activoSeleccionado);
+    const tipoFalla = getRadioValue('diag-tipo-falla');
+    setPasoEnabled(paso4, activoSeleccionado && !!tipoFalla);
+  } else {
+    setPasoEnabled(paso3, false);
+    setPasoEnabled(paso4, false);
+  }
 
   const panelHw = document.getElementById('diag-panel-hardware');
   const panelSw = document.getElementById('diag-panel-software');
+  const tipoFalla = getRadioValue('diag-tipo-falla');
   if (panelHw && panelSw) {
-    panelHw.style.display = tipoFalla === 'HARDWARE' ? '' : 'none';
-    panelSw.style.display = tipoFalla === 'SOFTWARE' ? '' : 'none';
+    panelHw.style.display = esEstandar && tipoFalla === 'HARDWARE' ? '' : 'none';
+    panelSw.style.display = esEstandar && tipoFalla === 'SOFTWARE' ? '' : 'none';
   }
 
+  setBloqueVisible('diag-bloque-acciones', esEstandar);
+  setBloqueVisible('diag-bloque-final', esEstandar);
+  setBloqueVisible('diag-bloque-daas', esDaas && activoSeleccionado);
+
+  actualizarDaasDetallesPanel();
   actualizarDescripcionFalla();
+  actualizarAccionesRealizadas();
+  actualizarDiagnosticoFinal();
+}
+
+function actualizarDaas() {
+  actualizarDaasDetallesPanel();
+  actualizarDescripcionFalla();
+  actualizarAccionesRealizadas();
+  actualizarDiagnosticoFinal();
 }
 
 function actualizarTodo() {
-  actualizarCascadaCampo1();
-  actualizarAccionesRealizadas();
-  actualizarDiagnosticoFinal();
+  actualizarModoDiagnostico();
 }
 
 export function resetDiagnosticoInteractivo() {
@@ -315,8 +463,15 @@ export function resetDiagnosticoInteractivo() {
   form.querySelectorAll('#diag-bloque-descripcion input[type="radio"]').forEach(el => { el.checked = false; });
   form.querySelectorAll('#diag-bloque-acciones input').forEach(el => { el.checked = false; });
   form.querySelectorAll('#diag-bloque-final input[type="radio"]').forEach(el => { el.checked = false; });
+  form.querySelectorAll('#diag-bloque-daas input[type="radio"], #diag-bloque-daas input[type="checkbox"]').forEach(el => {
+    el.checked = false;
+  });
+
   const repuesto = document.getElementById('diag-final-repuesto');
   if (repuesto) repuesto.selectedIndex = 0;
+
+  const daasDetalles = document.getElementById('diag-daas-detalles');
+  if (daasDetalles) daasDetalles.style.display = 'none';
 
   actualizarTodo();
 }
@@ -385,8 +540,51 @@ export function renderDiagnosticoInteractivo() {
       </div>
 
       <div class="diagnostico-preview-wrap">
-        <span class="diagnostico-preview__label">Vista previa — texto que aparecerá en el PDF</span>
+        <span class="diagnostico-preview__label">Vista previa — descripción de la falla (R16)</span>
         <div class="diagnostico-preview" id="preview-descripcion-falla" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- ── DAAS: Revisión cosmética ── -->
+    <div class="diagnostico-bloque" id="diag-bloque-daas" style="display:none;">
+      <div class="campo">
+        <label>Revisión cosmética DAAS *</label>
+        <div class="diagnostico-subseccion">
+          <span class="diagnostico-paso-label">¿Tiene novedades cosméticas?</span>
+          <div class="diagnostico-radio-group">
+            ${renderRadioGroup('diag-daas-cosmeticas', siNo, 'diag-daas-cos')}
+          </div>
+        </div>
+
+        <div id="diag-daas-detalles" style="display:none;">
+          <div class="diagnostico-subseccion">
+            <span class="diagnostico-paso-label">Indique qué novedades tiene visualmente</span>
+            <div class="diagnostico-check-group diagnostico-check-group--2col">
+              ${renderCheckboxes('diag-daas-novedades', DAAS_NOVEDADES, 'diag-daas-nov')}
+            </div>
+          </div>
+          <div class="diagnostico-subseccion">
+            <span class="diagnostico-paso-label">Indique en dónde presenta detalle cosmético</span>
+            <div class="diagnostico-check-group diagnostico-check-group--2col">
+              ${renderCheckboxes('diag-daas-ubicaciones', DAAS_UBICACIONES, 'diag-daas-ubi')}
+            </div>
+          </div>
+          <div class="diagnostico-subseccion">
+            <span class="diagnostico-paso-label">Le faltan accesorios originales del fabricante Hewlett-Packard</span>
+            <div class="diagnostico-check-group diagnostico-check-group--2col">
+              ${renderCheckboxes('diag-daas-accesorios', DAAS_ACCESORIOS, 'diag-daas-acc')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="diagnostico-preview-wrap">
+        <span class="diagnostico-preview__label">Vista previa — acciones realizadas (R18)</span>
+        <div class="diagnostico-preview" id="preview-daas-acciones" aria-live="polite"></div>
+      </div>
+      <div class="diagnostico-preview-wrap">
+        <span class="diagnostico-preview__label">Vista previa — diagnóstico final (R20)</span>
+        <div class="diagnostico-preview" id="preview-daas-final" aria-live="polite"></div>
       </div>
     </div>
 
@@ -473,11 +671,21 @@ export function initDiagnosticoInteractivo() {
   const campo1Ids = ['diag-tipo', 'diag-activo', 'diag-falla-hardware', 'diag-falla-software'];
   campo1Ids.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('change', actualizarCascadaCampo1);
+    if (el) el.addEventListener('change', actualizarModoDiagnostico);
   });
 
   form.querySelectorAll('input[name="diag-tipo-falla"]').forEach(el => {
-    el.addEventListener('change', actualizarCascadaCampo1);
+    el.addEventListener('change', actualizarModoDiagnostico);
+  });
+
+  form.querySelectorAll('input[name="diag-daas-cosmeticas"]').forEach(el => {
+    el.addEventListener('change', actualizarDaas);
+  });
+
+  form.querySelectorAll(
+    'input[name="diag-daas-novedades"], input[name="diag-daas-ubicaciones"], input[name="diag-daas-accesorios"]'
+  ).forEach(el => {
+    el.addEventListener('change', actualizarDaas);
   });
 
   form.querySelectorAll('input[name="diag-acciones"]').forEach(el => {

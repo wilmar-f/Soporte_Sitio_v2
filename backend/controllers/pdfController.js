@@ -1,5 +1,6 @@
 const { generarPdfDiagnostico } = require('../services/pdfService');
 const { CAMPOS_TEXTO } = require('../utils/renderDiagnostico');
+const { appendDiagnostico } = require('../utils/diagnosticosStore');
 
 exports.generarPdf = async (req, res) => {
   try {
@@ -13,6 +14,19 @@ exports.generarPdf = async (req, res) => {
       : [];
 
     const pdfBuffer = await generarPdfDiagnostico(datos);
+
+    try {
+      appendDiagnostico({
+        fecha: datos.fecha,
+        nombreTecnico: datos.nombreTecnico,
+        cedulaTecnico: datos.cedulaTecnico,
+        tipoDiagnostico: req.body.tipoDiagnostico ?? '',
+        serial: datos.serial,
+        etiqueta: datos.etiqueta,
+      });
+    } catch (storeErr) {
+      console.error('Error guardando historial de diagnóstico:', storeErr.message);
+    }
 
     const cedula = String(datos.cedula || 'sin_cedula').replace(/\D/g, '') || 'sin_cedula';
     const fecha = String(datos.fecha || '').replace(/-/g, '') || 'sin_fecha';

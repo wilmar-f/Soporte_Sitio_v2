@@ -10,8 +10,22 @@ const HEADER_MAP = {
   cedula: ['cedula', 'cédula', 'cedula tecnico', 'cédula técnico', 'documento'],
   contraseña: ['contraseña', 'contrasena', 'password', 'clave'],
   nombreCompleto: ['nombre', 'nombre completo', 'nombrecompleto', 'nombre tecnico', 'nombre técnico'],
-  cargo: ['cargo', 'puesto', 'rol'],
+  cargo: ['cargo', 'puesto'],
+  rol: ['rol'],
 };
+
+/** Normaliza valor de Rol del Excel → tecnico | administrador */
+function normalizeRol(value) {
+  const raw = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  if (!raw) return 'tecnico';
+  if (raw === 'administrador' || raw === 'admin') return 'administrador';
+  return 'tecnico';
+}
 
 function normalizeHeader(value) {
   return String(value ?? '')
@@ -49,6 +63,7 @@ function mapRow(rawRow) {
     contraseña: pick(HEADER_MAP.contraseña),
     nombreCompleto: pick(HEADER_MAP.nombreCompleto),
     cargo: pick(HEADER_MAP.cargo),
+    rol: normalizeRol(pick(HEADER_MAP.rol)),
   };
 }
 
@@ -94,4 +109,5 @@ module.exports = {
   reloadTecnicos,
   findTecnicoByCedula,
   normalizeCedula,
+  normalizeRol,
 };
