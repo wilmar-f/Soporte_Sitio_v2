@@ -60,6 +60,12 @@ function esAdministrador() {
   return esRolAdministrador(usuarioActual.rol);
 }
 
+function setSidebarBtnVisible(btn, visible) {
+  if (!btn) return;
+  btn.hidden = !visible;
+  btn.style.display = visible ? '' : 'none';
+}
+
 /* ══════════════════════════════════════════════════════
    2. DATOS MAESTROS: SEDES ↔ CÓDIGOS DE UBICACIÓN
    ══════════════════════════════════════════════════════ */
@@ -304,9 +310,7 @@ function renderInfoUsuario() {
   }
 
   const btnNoticias = document.getElementById('btn-noticias');
-  if (btnNoticias) {
-    btnNoticias.hidden = !esAdministrador();
-  }
+  setSidebarBtnVisible(btnNoticias, esAdministrador());
 }
 
 /* ── Carga ambos CSVs al iniciar ───────────────────── */
@@ -345,7 +349,7 @@ function registrarEventosSidebar() {
   }
 
   const btnNoticias = document.getElementById('btn-noticias');
-  if (btnNoticias) {
+  if (btnNoticias && esAdministrador()) {
     btnNoticias.addEventListener('click', () => {
       activarBotonSidebar('btn-noticias');
       renderPanelNoticias(tokenGuardado);

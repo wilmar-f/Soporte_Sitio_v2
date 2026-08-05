@@ -540,7 +540,7 @@ export function renderDiagnosticoInteractivo() {
       </div>
 
       <div class="diagnostico-preview-wrap">
-        <span class="diagnostico-preview__label">Vista previa — descripción de la falla (R16)</span>
+        <span class="diagnostico-preview__label">Vista previa</span>
         <div class="diagnostico-preview" id="preview-descripcion-falla" aria-live="polite"></div>
       </div>
     </div>
@@ -579,11 +579,11 @@ export function renderDiagnosticoInteractivo() {
       </div>
 
       <div class="diagnostico-preview-wrap">
-        <span class="diagnostico-preview__label">Vista previa — acciones realizadas (R18)</span>
+        <span class="diagnostico-preview__label">Vista previa</span>
         <div class="diagnostico-preview" id="preview-daas-acciones" aria-live="polite"></div>
       </div>
       <div class="diagnostico-preview-wrap">
-        <span class="diagnostico-preview__label">Vista previa — diagnóstico final (R20)</span>
+        <span class="diagnostico-preview__label">Vista previa</span>
         <div class="diagnostico-preview" id="preview-daas-final" aria-live="polite"></div>
       </div>
     </div>
@@ -612,7 +612,7 @@ export function renderDiagnosticoInteractivo() {
         </div>
       </div>
       <div class="diagnostico-preview-wrap">
-        <span class="diagnostico-preview__label">Vista previa — texto que aparecerá en el PDF</span>
+        <span class="diagnostico-preview__label">Vista previa</span>
         <div class="diagnostico-preview" id="preview-acciones-realizadas" aria-live="polite"></div>
       </div>
     </div>
@@ -653,7 +653,7 @@ export function renderDiagnosticoInteractivo() {
         </div>
       </div>
       <div class="diagnostico-preview-wrap">
-        <span class="diagnostico-preview__label">Vista previa — texto que aparecerá en el PDF</span>
+        <span class="diagnostico-preview__label">Vista previa</span>
         <div class="diagnostico-preview" id="preview-diagnostico-final" aria-live="polite"></div>
       </div>
     </div>

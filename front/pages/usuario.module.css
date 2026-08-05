@@ -103,6 +103,9 @@
   transition: background var(--transicion), transform var(--transicion);
   text-align: left;
 }
+.sidebar__btn[hidden] {
+  display: none !important;
+}
 .sidebar__btn:hover {
   background: rgba(255,255,255,0.22);
 }
