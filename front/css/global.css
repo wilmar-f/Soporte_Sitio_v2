@@ -73,15 +73,16 @@ ul, ol { list-style: none; }
 
 .banner__logo {
   height: 46px;
-  width: auto;
+  width: 110px;
   max-width: 110px;
   object-fit: contain;
-  /* Sin filtros: el PNG se muestra tal cual (incluido fondo blanco si lo trae la imagen) */
+  object-position: center;
+  flex-shrink: 0;
   background: transparent;
 }
 
 .banner__logo-placeholder {
-  width: 90px;
+  width: 110px;
   height: 46px;
   border: 1.5px dashed rgba(255, 255, 255, 0.35);
   border-radius: 4px;
@@ -449,56 +450,6 @@ fieldset.seccion legend {
   justify-content: center;
 }
 
-/* ── Vista previa plantilla (solo admin) ───────────── */
-.plantilla-preview-panel {
-  padding: 8px 4px 24px;
-}
-.plantilla-preview-toolbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.plantilla-preview-toolbar__titulo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-texto);
-  margin: 0 0 4px;
-}
-.plantilla-preview-toolbar__nota {
-  font-size: 13px;
-  color: var(--color-gris-medio);
-  margin: 0;
-}
-.plantilla-preview-scroll {
-  overflow: auto;
-  max-height: calc(100vh - var(--banner-altura) - 140px);
-  padding-bottom: 8px;
-}
-.plantilla-preview-root {
-  width: 816px;
-  max-width: 100%;
-  margin: 0 auto;
-  background: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-}
-.plantilla-preview-doc {
-  width: 816px;
-  margin: 0 auto;
-}
-.plantilla-preview-cargando,
-.plantilla-preview-error {
-  padding: 24px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--color-gris-medio);
-}
-.plantilla-preview-error {
-  color: var(--color-error, #c0392b);
-}
-
 /* ── Footer ───────────────────────────────────────── */
 footer {
   text-align: center;
@@ -514,9 +465,9 @@ footer {
   .campos-grid { grid-template-columns: 1fr; }
   #toast-container { left: 12px; right: 12px; bottom: 12px; }
   .toast { min-width: unset; }
-  .banner__logos { gap: 6px; padding: 6px 0; }
-  .banner__logo { height: 38px; }
-  .banner__logo-placeholder { width: 70px; height: 38px; font-size: 9px; }
+  .banner__logos { gap: 3px; padding: 6px 0; }
+  .banner__logo { height: 38px; width: 72px; max-width: 72px; }
+  .banner__logo-placeholder { width: 72px; height: 38px; font-size: 9px; }
 }
 @media (max-width: 900px) and (min-width: 641px) {
   .banner__logos { gap: 8px; }

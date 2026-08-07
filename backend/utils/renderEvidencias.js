@@ -3,7 +3,7 @@ const path = require('path');
 const Handlebars = require('handlebars');
 
 const templatePath = path.join(__dirname, '../templates/evidencias.template.hbs');
-const logo1Path = path.join(__dirname, '../../front/assets/logo1.png');
+const logo1Path = path.join(__dirname, '../../front/assets/pdf/corbeta-verde.png');
 
 let compiledTemplate = null;
 

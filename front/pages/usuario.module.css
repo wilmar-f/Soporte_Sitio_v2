@@ -121,6 +121,10 @@
 }
 .sidebar__btn--peligro:hover { background: rgba(253, 32, 43, 0.45); }
 
+.sidebar__btn--secundario {
+  margin-top: auto;
+}
+
 .sidebar__btn-icono { font-size: 16px; }
 
 /* ── Panel principal ──────────────────────────────── */
@@ -391,4 +395,60 @@
     min-width: 0;
     width: 100%;
   }
+}
+
+/* ── Modal cambiar contraseña ─────────────────────── */
+.modal-clave[hidden] {
+  display: none !important;
+}
+
+.modal-clave {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-clave__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 25, 45, 0.45);
+}
+
+.modal-clave__dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-blanco, #fff);
+  border-radius: var(--border-radius, 8px);
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.modal-clave__titulo {
+  margin: 0 0 16px;
+  font-size: 18px;
+  color: var(--color-texto, #1a2a4a);
+}
+
+.modal-clave__form .campo {
+  margin-bottom: 14px;
+}
+
+.modal-clave__ayuda {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-gris-medio, #6b7280);
+}
+
+.modal-clave__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
 }

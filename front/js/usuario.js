@@ -16,7 +16,6 @@ import {
   validarDiagnosticoInteractivo,
   resetDiagnosticoInteractivo,
 } from './diagnostico-logica.js';
-import { renderPlantillaEnContenedor } from './plantilla-preview.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
 import { renderPanelNoticias, esRolAdministrador } from './noticias.js';
 
@@ -304,13 +303,11 @@ function renderInfoUsuario() {
     avatarEl.textContent = inicial;
   }
 
-  const btnVistaPrevia = document.getElementById('btn-vista-previa');
-  if (btnVistaPrevia) {
-    btnVistaPrevia.hidden = tipo !== 'admin';
-  }
-
   const btnNoticias = document.getElementById('btn-noticias');
   setSidebarBtnVisible(btnNoticias, esAdministrador());
+
+  const btnCambiarContrasena = document.getElementById('btn-cambiar-contrasena');
+  setSidebarBtnVisible(btnCambiarContrasena, tipo === 'admin');
 }
 
 /* ── Carga ambos CSVs al iniciar ───────────────────── */
@@ -340,14 +337,6 @@ function registrarEventosSidebar() {
     renderFormularioDiagnostico();
   });
 
-  const btnVistaPrevia = document.getElementById('btn-vista-previa');
-  if (btnVistaPrevia) {
-    btnVistaPrevia.addEventListener('click', () => {
-      activarBotonSidebar('btn-vista-previa');
-      renderVistaPreviaFormato();
-    });
-  }
-
   const btnNoticias = document.getElementById('btn-noticias');
   if (btnNoticias && esAdministrador()) {
     btnNoticias.addEventListener('click', () => {
@@ -357,52 +346,119 @@ function registrarEventosSidebar() {
   }
 
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
+
+  registrarModalCambiarContrasena();
 }
 
-function activarBotonSidebar(idActivo) {
-  document.querySelectorAll('.sidebar__btn:not(.sidebar__btn--peligro)').forEach(btn => {
-    btn.classList.toggle('sidebar__btn--activo', btn.id === idActivo);
+function abrirModalCambiarContrasena() {
+  const modal = document.getElementById('modal-cambiar-contrasena');
+  const form = document.getElementById('form-cambiar-contrasena');
+  if (!modal || !form) return;
+  form.reset();
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  document.getElementById('clave-actual')?.focus();
+}
+
+function cerrarModalCambiarContrasena() {
+  const modal = document.getElementById('modal-cambiar-contrasena');
+  if (!modal) return;
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  document.getElementById('form-cambiar-contrasena')?.reset();
+}
+
+const MIN_PASSWORD_LENGTH = 6;
+const PASSWORD_COMPLEXITY_MSG =
+  'La nueva contraseña debe tener al menos 6 caracteres, una letra mayúscula, un número y un carácter especial (. * + -).';
+
+function validarComplejidadContrasena(contrasena) {
+  const pwd = String(contrasena);
+  if (pwd.length < MIN_PASSWORD_LENGTH) {
+    return { ok: false, error: PASSWORD_COMPLEXITY_MSG };
+  }
+  const valid =
+    /[A-Z]/.test(pwd) &&
+    /[0-9]/.test(pwd) &&
+    /[.*+\-]/.test(pwd);
+  return valid ? { ok: true } : { ok: false, error: PASSWORD_COMPLEXITY_MSG };
+}
+
+function registrarModalCambiarContrasena() {
+  const btnAbrir = document.getElementById('btn-cambiar-contrasena');
+  const btnCancelar = document.getElementById('btn-clave-cancelar');
+  const backdrop = document.getElementById('modal-clave-backdrop');
+  const form = document.getElementById('form-cambiar-contrasena');
+
+  if (usuarioActual.loginType !== 'admin') return;
+
+  btnAbrir?.addEventListener('click', abrirModalCambiarContrasena);
+  btnCancelar?.addEventListener('click', cerrarModalCambiarContrasena);
+  backdrop?.addEventListener('click', cerrarModalCambiarContrasena);
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!tokenGuardado) {
+      toast('Sesión expirada. Vuelve a ingresar.', 'error');
+      return;
+    }
+
+    const contrasenaActual = document.getElementById('clave-actual')?.value || '';
+    const contrasenaNueva = document.getElementById('clave-nueva')?.value || '';
+    const contrasenaConfirmacion = document.getElementById('clave-confirmar')?.value || '';
+
+    if (contrasenaNueva !== contrasenaConfirmacion) {
+      toast('La nueva contraseña y la confirmación no coinciden.', 'advertencia');
+      return;
+    }
+
+    const complejidad = validarComplejidadContrasena(contrasenaNueva);
+    if (!complejidad.ok) {
+      toast(complejidad.error, 'advertencia');
+      return;
+    }
+
+    const btnGuardar = document.getElementById('btn-clave-guardar');
+    if (btnGuardar) {
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Guardando…';
+    }
+
+    try {
+      const res = await fetch('/api/cambiar-contrasena', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenGuardado}`,
+        },
+        body: JSON.stringify({ contrasenaActual, contrasenaNueva, contrasenaConfirmacion }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast(data.error || 'No se pudo cambiar la contraseña.', 'error');
+        return;
+      }
+
+      toast(data.mensaje || 'Contraseña actualizada correctamente.', 'exito');
+      cerrarModalCambiarContrasena();
+    } catch (err) {
+      console.error('Error cambiando contraseña:', err);
+      toast('Error de conexión al cambiar la contraseña.', 'error');
+    } finally {
+      if (btnGuardar) {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar';
+      }
+    }
   });
 }
 
-async function renderVistaPreviaFormato() {
-  const panel = document.getElementById('panel-principal');
-  panel.innerHTML = `
-    <div class="plantilla-preview-panel">
-      <div class="plantilla-preview-toolbar">
-        <div>
-          <h2 class="plantilla-preview-toolbar__titulo">Vista previa del formato</h2>
-          <p class="plantilla-preview-toolbar__nota">Datos de ejemplo — no afecta el formulario de diagnóstico.</p>
-        </div>
-        <button type="button" class="btn btn--outline" id="btn-recargar-plantilla">Recargar plantilla</button>
-      </div>
-      <div class="plantilla-preview-scroll">
-        <div class="plantilla-preview-root" id="plantilla-preview-root">
-          <p class="plantilla-preview-cargando">Cargando plantilla…</p>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const root = document.getElementById('plantilla-preview-root');
-  const btnRecargar = document.getElementById('btn-recargar-plantilla');
-
-  async function cargarPreview() {
-    root.innerHTML = '<p class="plantilla-preview-cargando">Cargando plantilla…</p>';
-    if (btnRecargar) btnRecargar.disabled = true;
-    try {
-      await renderPlantillaEnContenedor(root);
-    } catch (err) {
-      console.error('Error cargando vista previa:', err);
-      root.innerHTML = `<p class="plantilla-preview-error">No se pudo cargar la plantilla: ${esc(String(err.message || err))}</p>`;
-      toast('No se pudo cargar la vista previa del formato.', 'error');
-    } finally {
-      if (btnRecargar) btnRecargar.disabled = false;
-    }
-  }
-
-  btnRecargar?.addEventListener('click', cargarPreview);
-  await cargarPreview();
+function activarBotonSidebar(idActivo) {
+  document.querySelectorAll('.sidebar__btn:not(.sidebar__btn--peligro):not(.sidebar__btn--secundario)').forEach(btn => {
+    btn.classList.toggle('sidebar__btn--activo', btn.id === idActivo);
+  });
 }
 
 function cerrarSesion() {
@@ -493,8 +549,15 @@ function renderFormularioDiagnostico() {
 
   const hoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-  const opsSedes    = SEDES_CODIGOS.map(s => `<option value="${esc(s.sede)}">${esc(s.sede)}</option>`).join('');
-  const opsCodigos  = SEDES_CODIGOS.map(s => `<option value="${esc(s.codigo)}">${esc(s.codigo)}</option>`).join('');
+  const cmpEs = (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' });
+  const opsSedes = [...SEDES_CODIGOS]
+    .sort((a, b) => cmpEs(a.sede, b.sede))
+    .map(s => `<option value="${esc(s.sede)}">${esc(s.sede)}</option>`)
+    .join('');
+  const opsCodigos = [...SEDES_CODIGOS]
+    .sort((a, b) => cmpEs(a.codigo, b.codigo))
+    .map(s => `<option value="${esc(s.codigo)}">${esc(s.codigo)}</option>`)
+    .join('');
 
   panel.innerHTML = `
     <form id="form-diagnostico" class="formulario-diagnostico" novalidate>

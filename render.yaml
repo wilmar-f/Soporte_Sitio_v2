@@ -3,9 +3,13 @@ services:
     name: diagnostico-web
     env: node
     region: oregon
-    plan: free
+    plan: starter
     buildCommand: cd backend && npm install
     startCommand: node backend/server.js
+    disk:
+      name: diagnostico-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PORT
         value: 10000
@@ -15,4 +19,6 @@ services:
         value: "22"
       - key: JWT_SECRET
         generateValue: true
+      - key: DATA_DIR
+        value: /var/data
     healthCheckPath: /

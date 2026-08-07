@@ -1,8 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
-
-const tecnicosPath = path.join(__dirname, '../data/tecnicos.xlsx');
+const { getDataDir } = require('./dataPaths');
 
 let cache = null;
 
@@ -13,6 +12,10 @@ const HEADER_MAP = {
   cargo: ['cargo', 'puesto'],
   rol: ['rol'],
 };
+
+function getTecnicosPath() {
+  return path.join(getDataDir(), 'tecnicos.xlsx');
+}
 
 /** Normaliza valor de Rol del Excel → tecnico | administrador */
 function normalizeRol(value) {
@@ -37,6 +40,16 @@ function normalizeHeader(value) {
 
 function normalizeCedula(value) {
   return String(value ?? '').replace(/\D/g, '');
+}
+
+function getColumnKeyFromRow(row, headerAliases) {
+  for (const key of Object.keys(row)) {
+    const norm = normalizeHeader(key);
+    for (const alias of headerAliases) {
+      if (norm === normalizeHeader(alias)) return key;
+    }
+  }
+  return null;
 }
 
 function mapRow(rawRow) {
@@ -67,7 +80,8 @@ function mapRow(rawRow) {
   };
 }
 
-function loadTecnicos() {
+function readWorkbook() {
+  const tecnicosPath = getTecnicosPath();
   if (!fs.existsSync(tecnicosPath)) {
     throw new Error(`No se encontró el archivo de técnicos: ${tecnicosPath}`);
   }
@@ -77,6 +91,52 @@ function loadTecnicos() {
   const sheet = workbook.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
+  return { workbook, sheetName, rows, tecnicosPath };
+}
+
+function headerMatches(cellValue, aliases) {
+  const norm = normalizeHeader(cellValue);
+  return aliases.some(alias => normalizeHeader(alias) === norm);
+}
+
+function findHeaderColumns(sheet) {
+  const ref = sheet['!ref'];
+  if (!ref) return null;
+
+  const range = XLSX.utils.decode_range(ref);
+  let cedulaCol = null;
+  let passCol = null;
+
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c })];
+    const header = cell?.v;
+    if (headerMatches(header, HEADER_MAP.cedula)) cedulaCol = c;
+    if (headerMatches(header, HEADER_MAP.contraseña)) passCol = c;
+  }
+
+  if (cedulaCol == null || passCol == null) return null;
+  return { range, cedulaCol, passCol };
+}
+
+function writeWorkbookAtomic(workbook, filePath) {
+  const buf = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  const tmpPath = `${filePath}.tmp`;
+  fs.writeFileSync(tmpPath, buf);
+  try {
+    fs.renameSync(tmpPath, filePath);
+  } catch (err) {
+    if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES') {
+      fs.copyFileSync(tmpPath, filePath);
+      fs.unlinkSync(tmpPath);
+    } else {
+      try { fs.unlinkSync(tmpPath); } catch (_) { /* ignore */ }
+      throw err;
+    }
+  }
+}
+
+function loadTecnicos() {
+  const { rows } = readWorkbook();
   return rows
     .map(mapRow)
     .filter(row => row.cedula && row.contraseña);
@@ -104,10 +164,75 @@ function findTecnicoByCedula(cedulaInput, contrasena) {
   ) || null;
 }
 
+/**
+ * Actualiza la contraseña de un técnico en tecnicos.xlsx.
+ * @returns {{ ok: true }} si se actualizó correctamente
+ * @throws Error con code INVALID_PASSWORD | USER_NOT_FOUND | WRITE_ERROR
+ */
+function updateContrasena(cedulaInput, contrasenaActual, contrasenaNueva) {
+  const cedula = normalizeCedula(cedulaInput);
+  if (!cedula) {
+    const err = new Error('Usuario no encontrado');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  const { workbook, sheetName, tecnicosPath } = readWorkbook();
+  const sheet = workbook.Sheets[sheetName];
+  const cols = findHeaderColumns(sheet);
+
+  if (!cols) {
+    const err = new Error('Usuario no encontrado');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  const { range, cedulaCol, passCol } = cols;
+  let found = false;
+
+  for (let r = range.s.r + 1; r <= range.e.r; r++) {
+    const cedulaCellRef = XLSX.utils.encode_cell({ r, c: cedulaCol });
+    const cedulaCell = sheet[cedulaCellRef];
+    if (normalizeCedula(cedulaCell?.v) !== cedula) continue;
+
+    const passCellRef = XLSX.utils.encode_cell({ r, c: passCol });
+    const passCell = sheet[passCellRef];
+    if (String(passCell?.v ?? '') !== String(contrasenaActual)) {
+      const err = new Error('Contraseña actual incorrecta');
+      err.code = 'INVALID_PASSWORD';
+      throw err;
+    }
+
+    sheet[passCellRef] = { t: 's', v: contrasenaNueva };
+    found = true;
+    break;
+  }
+
+  if (!found) {
+    const err = new Error('Usuario no encontrado');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  try {
+    writeWorkbookAtomic(workbook, tecnicosPath);
+    reloadTecnicos();
+  } catch (writeErr) {
+    const err = new Error('No se pudo guardar la nueva contraseña');
+    err.code = 'WRITE_ERROR';
+    err.cause = writeErr;
+    throw err;
+  }
+
+  return { ok: true };
+}
+
 module.exports = {
   getTecnicos,
   reloadTecnicos,
   findTecnicoByCedula,
+  updateContrasena,
   normalizeCedula,
   normalizeRol,
+  getTecnicosPath,
 };

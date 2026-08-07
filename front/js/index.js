@@ -3,7 +3,6 @@
  */
 import { renderBanner }       from './banner.js';
 import { toast }              from './toast.js';
-import { loginConOffice365 }  from './auth-office365.js';
 import { registrarUltimoAcceso } from './ultimo-acceso.js';
 
 // Inicializar banner
@@ -16,12 +15,6 @@ if (sessionStorage.getItem('token') || sessionStorage.getItem('o365session')) {
 
 const form        = document.getElementById('login-form');
 const btnIngresar = document.getElementById('btn-ingresar');
-const btnOffice   = document.getElementById('btn-office365');
-
-// ── Botón Ingreso Office 365 ───────────────────────────────────────────────
-if (btnOffice) {
-  btnOffice.addEventListener('click', () => loginConOffice365(btnOffice));
-}
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();

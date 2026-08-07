@@ -8,5 +8,25 @@
     "tipoDiagnostico": "DAAS",
     "serial": "41AXM75",
     "etiqueta": "0021205"
+  },
+  {
+    "id": "41c7931b-e5cc-4a4c-abb7-22e1e6b0d2c2",
+    "createdAt": "2026-08-06T03:05:11.875Z",
+    "fecha": "2026-08-06",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "ESTANDAR",
+    "serial": "41AXM75",
+    "etiqueta": "0021205"
+  },
+  {
+    "id": "3279e623-6fc0-46c3-b3d5-846d7d419e7b",
+    "createdAt": "2026-08-07T16:54:13.634Z",
+    "fecha": "2026-08-07",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "DAAS",
+    "serial": "41AXM75",
+    "etiqueta": "0021205"
   }
 ]

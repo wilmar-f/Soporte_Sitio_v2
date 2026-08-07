@@ -1,14 +1,14 @@
-/**
- * Almacén ligero de metadatos de diagnósticos (JSON).
- * Nota: en Render plan free el disco es efímero; considerar DB o disco persistente en producción.
- */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { getDataDir } = require('./dataPaths');
 
-const storePath = path.join(__dirname, '../data/diagnosticos.json');
+function getStorePath() {
+  return path.join(getDataDir(), 'diagnosticos.json');
+}
 
 function ensureStore() {
+  const storePath = getStorePath();
   if (!fs.existsSync(storePath)) {
     fs.writeFileSync(storePath, '[]', 'utf8');
   }
@@ -16,6 +16,7 @@ function ensureStore() {
 
 function readAll() {
   ensureStore();
+  const storePath = getStorePath();
   try {
     const raw = fs.readFileSync(storePath, 'utf8');
     const data = JSON.parse(raw);
@@ -27,6 +28,7 @@ function readAll() {
 
 function writeAll(records) {
   ensureStore();
+  const storePath = getStorePath();
   fs.writeFileSync(storePath, JSON.stringify(records, null, 2), 'utf8');
 }
 

@@ -32,7 +32,7 @@ export const TIPOS_ACTIVO = [
 
 export const DAAS_TEXTOS = {
   descripcionFalla: 'El equipo hace parte de los equipos DAAS relacionados por fin de contrato.',
-  diagnosticoFinal: 'Se inicia el tramite de renovacion por finalizacion de contrato',
+  diagnosticoFinal: 'Se inicia el trámite de renovación por finalización de contrato',
   accionesBuenEstado: 'Se revisa el equipo y se encuentra en buen estado tanto en hardware como en software.',
 };
 
@@ -57,7 +57,7 @@ export const FALLAS_HARDWARE = [
   'DIADEMA',
   'MULTIPUERTOS',
   'ADAPTADOR DISPLAY PORT',
-  'CARGADOR DE ENERGIA',
+  'CARGADOR DE ENERGÍA',
   'CABLE USB',
   'RECALENTAMIENTO EXCESIVO',
   'GENERA RUIDO ANORMAL',
@@ -77,7 +77,7 @@ export const ACCIONES_REALIZADAS = [
   'Formateo/reinstalación del sistema operativo',
   'Reseteo de memoria CMOS',
   'Restablecer la BIOS',
-  'Elimina caché',
+  'Eliminación de caché',
   'Se borran procesos de arranque',
 ];
 
@@ -137,6 +137,12 @@ function renderSelectOptions(items, { valueKey = 'value', labelKey = 'label', en
     const enabled = item[enabledKey] !== false;
     return `<option value="${val}" ${enabled ? '' : 'disabled'}>${label}</option>`;
   }).join('');
+}
+
+function sortAlpha(items) {
+  return [...items].sort((a, b) =>
+    String(a).localeCompare(String(b), 'es', { sensitivity: 'base' })
+  );
 }
 
 function renderCheckboxes(name, items, prefix) {
@@ -247,7 +253,7 @@ function construirAccionesRealizadasDaas() {
 
   if (novedades.length === 0 || ubicaciones.length === 0) return '';
 
-  let texto = `Se revisa equipo y se fisicamente presenta ${unirLista(novedades)} en ${unirLista(ubicaciones)}.`;
+  let texto = `Se revisa equipo y se presenta físicamente ${unirLista(novedades)} en ${unirLista(ubicaciones)}.`;
 
   if (accesorios.length > 0) {
     texto += ` El equipo no cuenta con ${unirLista(accesorios)} del fabricante Hewlett-Packard`;
@@ -271,10 +277,10 @@ export function construirAccionesRealizadas() {
   const listaPartes = ninguna ? 'NINGUNA' : unirLista(partes);
 
   if (solucionado === 'si') {
-    return `Se procede con la revisión general del equipo, se realiza ${listaAcciones} y se realizó pruebas con cambio de partes ${listaPartes}, dando solución a la falla reportada.`;
+    return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones} y se realizaron pruebas con cambio de partes ${listaPartes}, dando solución a la falla reportada.`;
   }
 
-  return `Se procede con la revisión general del equipo, se realiza ${listaAcciones} sin dar solución a la falla reportada. Se realizó pruebas con cambio de partes ${listaPartes} y la falla persiste.`;
+  return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones} sin dar solución a la falla reportada. Se realizaron pruebas con cambio de partes ${listaPartes} y la falla persiste.`;
 }
 
 export function construirDiagnosticoFinal() {
@@ -483,9 +489,9 @@ export function resetDiagnosticoInteractivo() {
 export function renderDiagnosticoInteractivo() {
   const optsDiag = `<option value="">— Selecciona —</option>${renderSelectOptions(TIPOS_DIAGNOSTICO)}`;
   const optsActivo = `<option value="">— Selecciona —</option>${renderSelectOptions(TIPOS_ACTIVO)}`;
-  const optsHw = `<option value="">— Selecciona —</option>${renderSelectOptions(FALLAS_HARDWARE)}`;
-  const optsSw = `<option value="">— Selecciona —</option>${renderSelectOptions(FALLAS_SOFTWARE)}`;
-  const optsRepuesto = `<option value="">— Selecciona —</option>${renderSelectOptions(REPUESTOS_AVERIADOS)}`;
+  const optsHw = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(FALLAS_HARDWARE))}`;
+  const optsSw = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(FALLAS_SOFTWARE))}`;
+  const optsRepuesto = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(REPUESTOS_AVERIADOS))}`;
 
   const siNo = [
     { value: 'si', label: 'SÍ' },
@@ -570,7 +576,7 @@ export function renderDiagnosticoInteractivo() {
             </div>
           </div>
           <div class="diagnostico-subseccion">
-            <span class="diagnostico-paso-label">Le faltan accesorios originales del fabricante Hewlett-Packard</span>
+            <span class="diagnostico-paso-label">¿Le faltan accesorios originales del fabricante Hewlett-Packard?</span>
             <div class="diagnostico-check-group diagnostico-check-group--2col">
               ${renderCheckboxes('diag-daas-accesorios', DAAS_ACCESORIOS, 'diag-daas-acc')}
             </div>

@@ -35,9 +35,9 @@
           <span class="sidebar__btn-icono">📋</span>
           Diagnóstico
         </button>
-        <button class="sidebar__btn" id="btn-vista-previa" hidden>
-          <span class="sidebar__btn-icono">👁</span>
-          VISTA PREVIA FORMATO
+        <button class="sidebar__btn sidebar__btn--secundario" id="btn-cambiar-contrasena" hidden>
+          <span class="sidebar__btn-icono">🔑</span>
+          Cambiar contraseña
         </button>
         <button class="sidebar__btn sidebar__btn--peligro" id="btn-cerrar-sesion">
           <span class="sidebar__btn-icono">🚪</span>
@@ -56,8 +56,34 @@
     </section>
   </main>
 
+  <div class="modal-clave" id="modal-cambiar-contrasena" hidden aria-hidden="true">
+    <div class="modal-clave__backdrop" id="modal-clave-backdrop"></div>
+    <div class="modal-clave__dialog" role="dialog" aria-labelledby="modal-clave-titulo" aria-modal="true">
+      <h2 class="modal-clave__titulo" id="modal-clave-titulo">Cambiar contraseña</h2>
+      <form id="form-cambiar-contrasena" class="modal-clave__form" novalidate>
+        <div class="campo">
+          <label for="clave-actual">Contraseña actual</label>
+          <input type="password" id="clave-actual" name="contrasenaActual" autocomplete="current-password" required>
+        </div>
+        <div class="campo">
+          <label for="clave-nueva">Nueva contraseña</label>
+          <input type="password" id="clave-nueva" name="contrasenaNueva" autocomplete="new-password" minlength="6" required>
+          <p class="modal-clave__ayuda">Mínimo 6 caracteres, con mayúscula, número y un carácter . * + -</p>
+        </div>
+        <div class="campo">
+          <label for="clave-confirmar">Confirmar nueva contraseña</label>
+          <input type="password" id="clave-confirmar" name="contrasenaConfirmacion" autocomplete="new-password" minlength="6" required>
+        </div>
+        <div class="modal-clave__acciones">
+          <button type="button" class="btn btn--outline" id="btn-clave-cancelar">Cancelar</button>
+          <button type="submit" class="btn btn--primario" id="btn-clave-guardar">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <footer>
-    <p>&copy; 2024 Sistema de Diagnóstico en Sitio — Todos los derechos reservados</p>
+    <p>&copy; 2026 Sistema de Diagnóstico Web - Soporte en Sitio — Todos los derechos reservados</p>
   </footer>
 
   <script type="module" src="../js/usuario.js"></script>

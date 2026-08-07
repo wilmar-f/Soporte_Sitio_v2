@@ -69,36 +69,6 @@
   cursor: not-allowed;
 }
 
-/* ── Separador "o" entre botones ── */
-.login-separador {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 28px;
-  color: var(--color-gris-medio);
-  font-size: 13px;
-}
-.login-separador::before,
-.login-separador::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-gris-borde);
-}
-
-/* ── Wrapper botón Office 365 ── */
-.login-o365-wrapper {
-  padding: 0 28px 28px;
-}
-.login-o365-wrapper .btn {
-  padding: 12px;
-  font-size: 15px;
-}
-.login-o365-wrapper .btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .login-card__encabezado { padding: 28px 20px 22px; }

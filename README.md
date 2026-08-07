@@ -23,7 +23,8 @@ Desarrollado con HTML5 / CSS / JavaScript Vanilla en el frontend y Node.js (Expr
 │   │   ├── banner.js             ← Componente banner reutilizable
 │   │   └── toast.js              ← Componente toast reutilizable
 │   └── assets/
-│       └── logo1.png … logo5.png ← PENDIENTE: reemplazar con logos reales
+│       ├── header/               ← Logos del banner web (index / usuario)
+│       └── pdf/                  ← Logos embebidos en plantilla PDF
 ├── backend/
 │   ├── server.js
 │   ├── routes/
@@ -70,8 +71,15 @@ El ingreso usa **cédula + contraseña** definidas en [`backend/data/tecnicos.xl
 | Contraseña | Clave de acceso |
 | Nombre | Nombre completo (se autocompleta en "Datos del técnico") |
 | Cargo | Cargo del técnico (se autocompleta y bloquea en el formulario) |
+| Rol | `Tecnico` o `Administrador` (controla acceso a Noticias) |
 
 > Reemplaza `tecnicos.xlsx` con el archivo real de tu equipo y vuelve a desplegar. Las contraseñas se almacenan en texto plano dentro del archivo — no expongas ese archivo públicamente.
+
+### Cambio de contraseña (login Excel)
+
+Cada técnico puede cambiar su contraseña desde el sidebar (**Cambiar contraseña**). El servidor actualiza `tecnicos.xlsx` en la ruta configurada por `DATA_DIR` (local: `backend/data/`; Render: disco persistente en `/var/data`).
+
+En Render con [`render.yaml`](render.yaml) plan **starter** + disco persistente, los cambios de contraseña y el historial de Noticias sobreviven redeploys.
 
 Para generar un archivo de ejemplo:
 
@@ -207,12 +215,16 @@ La **vista previa del formato** (solo admin) sigue usando `diagnostico.template.
 
 ## Logos y assets
 
-Colocar los logos en `/front/assets/` con los nombres:
-- `logo1.png` — Logo principal (aparece en el banner y en la plantilla PDF)
-- `logo2.png` — Logo secundario
-- `logo3.png`, `logo4.png`, `logo5.png` — Logos adicionales del banner
+Estructura en `/front/assets/`:
 
-Los logos que no existan serán reemplazados automáticamente por un placeholder visual.
+**Header web** (`header/` — banner de index y usuario):
+- `corbeta-color.jpg`, `alkosto.jpg`, `ktronix.jpg`
+
+**PDF** (`pdf/` — plantilla de diagnóstico y evidencias):
+- `corbeta-verde.png` — fila 1 del encabezado PDF
+- `corbeta-negro.png` — fila 2 del encabezado PDF
+
+Los logos que no existan en el header serán reemplazados por un placeholder visual.
 
 ---
 

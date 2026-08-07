@@ -3,8 +3,8 @@ const path = require('path');
 const Handlebars = require('handlebars');
 
 const templatePath = path.join(__dirname, '../templates/diagnostico.template.hbs');
-const logo1Path = path.join(__dirname, '../../front/assets/logo1.png');
-const logo2Path = path.join(__dirname, '../../front/assets/logo2.png');
+const logo1Path = path.join(__dirname, '../../front/assets/pdf/corbeta-verde.png');
+const logo2Path = path.join(__dirname, '../../front/assets/pdf/corbeta-negro.png');
 
 let compiledTemplate = null;
 

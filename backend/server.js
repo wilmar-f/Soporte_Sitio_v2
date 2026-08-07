@@ -2,6 +2,9 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const { bootstrapDataFiles } = require('./utils/dataPaths');
+
+bootstrapDataFiles();
 
 const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
