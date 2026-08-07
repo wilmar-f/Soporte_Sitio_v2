@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
 const pdfRoutes = require('./routes/pdf');
 const diagnosticosRoutes = require('./routes/diagnosticos');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use('/api', authRoutes);
 app.use('/api', dataRoutes);
 app.use('/api', pdfRoutes);
 app.use('/api', diagnosticosRoutes);
+app.use('/api', adminRoutes);
 
 // Root redirect to login page
 app.get('/', (req, res) => {

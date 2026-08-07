@@ -31,6 +31,10 @@
           <span class="sidebar__btn-icono">📰</span>
           Noticias
         </button>
+        <button class="sidebar__btn" id="btn-usuarios" hidden>
+          <span class="sidebar__btn-icono">👥</span>
+          Usuarios
+        </button>
         <button class="sidebar__btn sidebar__btn--activo" id="btn-diagnostico">
           <span class="sidebar__btn-icono">📋</span>
           Diagnóstico
@@ -77,6 +81,29 @@
         <div class="modal-clave__acciones">
           <button type="button" class="btn btn--outline" id="btn-clave-cancelar">Cancelar</button>
           <button type="submit" class="btn btn--primario" id="btn-clave-guardar">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-clave" id="modal-reset-contrasena" hidden aria-hidden="true">
+    <div class="modal-clave__backdrop" id="modal-reset-backdrop"></div>
+    <div class="modal-clave__dialog" role="dialog" aria-labelledby="modal-reset-titulo" aria-modal="true">
+      <h2 class="modal-clave__titulo" id="modal-reset-titulo">Restablecer contraseña</h2>
+      <p class="modal-clave__subtitulo" id="modal-reset-subtitulo"></p>
+      <form id="form-reset-contrasena" class="modal-clave__form" novalidate>
+        <div class="campo">
+          <label for="reset-clave-nueva">Nueva contraseña temporal</label>
+          <input type="password" id="reset-clave-nueva" name="contrasenaNueva" autocomplete="new-password" minlength="6" required>
+          <p class="modal-clave__ayuda">Mínimo 6 caracteres, con mayúscula, número y un carácter . * + -</p>
+        </div>
+        <div class="campo">
+          <label for="reset-clave-confirmar">Confirmar contraseña</label>
+          <input type="password" id="reset-clave-confirmar" name="contrasenaConfirmacion" autocomplete="new-password" minlength="6" required>
+        </div>
+        <div class="modal-clave__acciones">
+          <button type="button" class="btn btn--outline" id="btn-reset-cancelar">Cancelar</button>
+          <button type="submit" class="btn btn--primario" id="btn-reset-guardar">Restablecer</button>
         </div>
       </form>
     </div>

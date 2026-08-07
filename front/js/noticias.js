@@ -4,7 +4,7 @@
 import { toast } from './toast.js';
 
 const TIPOS_LABEL = {
-  ESTANDAR: 'ESTÁNDAR',
+  ESTANDAR: 'DIAGNOSTICO CON ACTIVOS',
   DAAS: 'DAAS',
   OBSOLESCENCIA: 'OBSOLESCENCIA',
 };
@@ -51,7 +51,7 @@ function buildAnioOptions(anios, selected) {
 function buildTipoOptions(selected) {
   const opts = [
     { value: '', label: 'Todos los tipos' },
-    { value: 'ESTANDAR', label: 'ESTÁNDAR' },
+    { value: 'ESTANDAR', label: 'DIAGNOSTICO CON ACTIVOS' },
     { value: 'DAAS', label: 'DAAS' },
     { value: 'OBSOLESCENCIA', label: 'OBSOLESCENCIA' },
   ];

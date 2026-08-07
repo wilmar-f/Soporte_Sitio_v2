@@ -2,7 +2,7 @@
  * diagnostico-logica.js — Selección interactiva para los 3 campos de diagnóstico.
  * Genera texto estandarizado para el PDF (sin texto libre del técnico).
  *
- * Alcance actual: ESTÁNDAR y DAAS + DESKTOP/LAPTOP.
+ * Alcance actual: DIAGNOSTICO CON ACTIVOS y DAAS + DESKTOP/LAPTOP.
  * TODO: agregar flujos OBSOLESCENCIA y demás tipos de activo.
  */
 
@@ -11,7 +11,7 @@
    ══════════════════════════════════════════════════════ */
 
 export const TIPOS_DIAGNOSTICO = [
-  { value: 'ESTANDAR', label: 'ESTÁNDAR', enabled: true },
+  { value: 'ESTANDAR', label: 'DIAGNOSTICO CON ACTIVOS', enabled: true },
   { value: 'DAAS', label: 'DAAS', enabled: true },
   { value: 'OBSOLESCENCIA', label: 'OBSOLESCENCIA', enabled: false },
 ];
@@ -46,29 +46,29 @@ export const DAAS_ACCESORIOS = [
 ];
 
 export const FALLAS_HARDWARE = [
-  'NO ENCIENDE',
-  'PANTALLA/NO DA IMAGEN',
+  'Adaptador display port',
+  'Almacenamiento hdd/ssd',
+  'Board',
+  'Cable usb',
+  'Cargador de energía',
   'CPU',
-  'BOARD',
+  'Diadema',
+  'Genera ruido anormal',
+  'Mouse',
+  'Multipuertos',
+  'No enciende',
+  'Pantalla/No da imagen',
   'RAM',
-  'ALMACENAMIENTO HDD/SSD',
-  'TECLADO',
-  'MOUSE',
-  'DIADEMA',
-  'MULTIPUERTOS',
-  'ADAPTADOR DISPLAY PORT',
-  'CARGADOR DE ENERGÍA',
-  'CABLE USB',
-  'RECALENTAMIENTO EXCESIVO',
-  'GENERA RUIDO ANORMAL',
+  'Recalentamiento excesivo',
+  'Teclado',
 ];
 
 export const FALLAS_SOFTWARE = [
-  'LENTITUD EN PROCESOS',
-  'ERROR SISTEMA OPERATIVO',
-  'BLOQUEO DE EQUIPO',
-  'PANTALLAZO AZUL',
-  'NO INICIA WINDOWS',
+  'Bloqueo de equipo',
+  'Error sistema operativo',
+  'Lentitud en procesos',
+  'No inicia windows',
+  'Pantallazo azul',
 ];
 
 export const ACCIONES_REALIZADAS = [
@@ -98,18 +98,18 @@ export const CAMBIO_PARTES = [
 ];
 
 export const REPUESTOS_AVERIADOS = [
-  'RAM',
-  'SSD',
-  'Teclado',
+  'Adaptador',
+  'Board/Tarjeta principal',
+  'Cable usb',
+  'Cargador de energía',
+  'Cooler',
+  'Fan cpu',
+  'Fuente de poder',
   'Mouse',
   'Pila',
-  'Cargador de energía',
-  'Cable USB',
-  'Adaptador',
-  'Fuente de poder',
-  'Cooler',
-  'Fan CPU',
-  'Board/Tarjeta Principal',
+  'Ram',
+  'Ssd',
+  'Teclado',
 ];
 
 const ACTIVOS_DAAS = ['DESKTOP', 'LAPTOP'];
@@ -117,6 +117,14 @@ const ACTIVOS_DAAS = ['DESKTOP', 'LAPTOP'];
 /* ══════════════════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════════════════ */
+
+/** Convierte texto a tipo oración; segmentos separados por "/" capitalizan cada parte. */
+function toOracion(texto) {
+  return String(texto)
+    .split('/')
+    .map(part => part.trim().toLowerCase().replace(/^./, c => c.toUpperCase()))
+    .join('/');
+}
 
 /** Une items con coma y "y" antes del último: ["A","B","C"] → "A, B y C" */
 export function unirLista(items) {
@@ -277,10 +285,10 @@ export function construirAccionesRealizadas() {
   const listaPartes = ninguna ? 'NINGUNA' : unirLista(partes);
 
   if (solucionado === 'si') {
-    return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones} y se realizaron pruebas con cambio de partes ${listaPartes}, dando solución a la falla reportada.`;
+    return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones}.\n\nSe realizaron pruebas con cambio de partes ${listaPartes}, dando solución a la falla reportada.`;
   }
 
-  return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones} sin dar solución a la falla reportada. Se realizaron pruebas con cambio de partes ${listaPartes} y la falla persiste.`;
+  return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones} sin dar solución a la falla reportada.\n\nSe realizaron pruebas con cambio de partes ${listaPartes} y la falla persiste.`;
 }
 
 export function construirDiagnosticoFinal() {
@@ -291,30 +299,9 @@ export function construirDiagnosticoFinal() {
     return DAAS_TEXTOS.diagnosticoFinal;
   }
 
-  const o1 = getRadioValue('diag-final-solucionado');
-  const o2 = getRadioValue('diag-final-cotizacion');
-  const o5 = getRadioValue('diag-final-renovacion');
-  const o4 = document.getElementById('diag-final-repuesto')?.value || '';
-
-  if (!o1 || !o2 || !o5) return '';
-
-  // Combinación A
-  if (o1 === 'si' && o2 === 'no' && o5 === 'no') {
-    if (!o4) return '';
-    return `El daño es ${o4}. Se debe cambiar la parte.`;
-  }
-
-  // Combinación B
-  if (o1 === 'no' && o2 === 'si' && o5 === 'no') {
-    return 'El daño es la board/tarjeta principal. Se debe cambiar la parte, se escala caso al Almacén de Activos para cotizar valor de repuestos.';
-  }
-
-  // Combinación C
-  if (o1 === 'no' && o2 === 'no' && o5 === 'si') {
-    return 'El daño es la board/tarjeta principal. De acuerdo a la cotización enviada por el taller autorizado, el costo de la reparación es más elevado que el costo neto actual del activo, por lo que no resulta viable efectuar la reparación. Se debe realizar renovación del activo.';
-  }
-
-  return '';
+  const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
+  if (!repuesto) return '';
+  return `El daño es ${repuesto}. Se debe cambiar la parte.`;
 }
 
 export function getValoresDiagnostico() {
@@ -366,12 +353,19 @@ export function validarDiagnosticoInteractivo() {
     return { valido: true, mensaje: '' };
   }
 
-  const { descripcionFalla, accionesRealizadas } = getValoresDiagnostico();
+  const { descripcionFalla, accionesRealizadas, diagnosticoFinal } = getValoresDiagnostico();
 
   if (!descripcionFalla || !accionesRealizadas) {
     return {
       valido: false,
       mensaje: 'Complete todos los campos de diagnóstico.',
+    };
+  }
+
+  if (!diagnosticoFinal) {
+    return {
+      valido: false,
+      mensaje: 'Seleccione el repuesto averiado en Diagnóstico final.',
     };
   }
 
@@ -468,7 +462,6 @@ export function resetDiagnosticoInteractivo() {
   form.querySelectorAll('#diag-bloque-descripcion select').forEach(el => { el.selectedIndex = 0; });
   form.querySelectorAll('#diag-bloque-descripcion input[type="radio"]').forEach(el => { el.checked = false; });
   form.querySelectorAll('#diag-bloque-acciones input').forEach(el => { el.checked = false; });
-  form.querySelectorAll('#diag-bloque-final input[type="radio"]').forEach(el => { el.checked = false; });
   form.querySelectorAll('#diag-bloque-daas input[type="radio"], #diag-bloque-daas input[type="checkbox"]').forEach(el => {
     el.checked = false;
   });
@@ -628,34 +621,10 @@ export function renderDiagnosticoInteractivo() {
       <div class="campo">
         <label>Diagnóstico final</label>
         <div class="diagnostico-subseccion">
-          <span class="diagnostico-paso-label">¿Se solucionó la falla?</span>
-          <div class="diagnostico-radio-group">
-            ${renderRadioGroup('diag-final-solucionado', siNo, 'diag-fs')}
-          </div>
-        </div>
-        <div class="diagnostico-subseccion">
-          <span class="diagnostico-paso-label">¿Se requiere gestionar repuestos con Activos o cotización con gestor de garantías?</span>
-          <div class="diagnostico-radio-group">
-            ${renderRadioGroup('diag-final-cotizacion', siNo, 'diag-fc')}
-          </div>
-        </div>
-        <div class="diagnostico-subseccion">
-          <span class="diagnostico-paso-label">¿El activo tiene costo neto?</span>
-          <div class="diagnostico-radio-group">
-            ${renderRadioGroup('diag-final-costo', siNo, 'diag-fcost')}
-          </div>
-        </div>
-        <div class="diagnostico-subseccion">
           <span class="diagnostico-paso-label">Indique el repuesto averiado</span>
           <select id="diag-final-repuesto" class="diag-control">
             ${optsRepuesto}
           </select>
-        </div>
-        <div class="diagnostico-subseccion">
-          <span class="diagnostico-paso-label">¿El diagnóstico es renovación? El valor de los repuestos es más elevado que el costo neto del activo</span>
-          <div class="diagnostico-radio-group">
-            ${renderRadioGroup('diag-final-renovacion', siNo, 'diag-fr')}
-          </div>
         </div>
       </div>
       <div class="diagnostico-preview-wrap">
@@ -715,12 +684,6 @@ export function initDiagnosticoInteractivo() {
 
   form.querySelectorAll('input[name="diag-solucionado-acciones"]').forEach(el => {
     el.addEventListener('change', actualizarAccionesRealizadas);
-  });
-
-  form.querySelectorAll(
-    'input[name="diag-final-solucionado"], input[name="diag-final-cotizacion"], input[name="diag-final-renovacion"]'
-  ).forEach(el => {
-    el.addEventListener('change', actualizarDiagnosticoFinal);
   });
 
   const repuesto = document.getElementById('diag-final-repuesto');

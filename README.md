@@ -71,7 +71,7 @@ El ingreso usa **cédula + contraseña** definidas en [`backend/data/tecnicos.xl
 | Contraseña | Clave de acceso |
 | Nombre | Nombre completo (se autocompleta en "Datos del técnico") |
 | Cargo | Cargo del técnico (se autocompleta y bloquea en el formulario) |
-| Rol | `Tecnico` o `Administrador` (controla acceso a Noticias) |
+| Rol | `Tecnico` o `Administrador` (controla acceso a Noticias y Usuarios) |
 
 > Reemplaza `tecnicos.xlsx` con el archivo real de tu equipo y vuelve a desplegar. Las contraseñas se almacenan en texto plano dentro del archivo — no expongas ese archivo públicamente.
 
@@ -80,6 +80,27 @@ El ingreso usa **cédula + contraseña** definidas en [`backend/data/tecnicos.xl
 Cada técnico puede cambiar su contraseña desde el sidebar (**Cambiar contraseña**). El servidor actualiza `tecnicos.xlsx` en la ruta configurada por `DATA_DIR` (local: `backend/data/`; Render: disco persistente en `/var/data`).
 
 En Render con [`render.yaml`](render.yaml) plan **starter** + disco persistente, los cambios de contraseña y el historial de Noticias sobreviven redeploys.
+
+### Contraseña olvidada (restablecimiento por administrador)
+
+Si un técnico olvida su contraseña:
+
+1. Debe contactar a un usuario con rol **Administrador**.
+2. El administrador ingresa al panel y abre **Usuarios** en el sidebar.
+3. Busca al técnico por cédula o nombre y pulsa **Restablecer**.
+4. Asigna una contraseña temporal que cumpla las reglas de complejidad.
+5. Comunica la clave al técnico por un canal interno seguro (Teams, teléfono, etc.).
+
+En la pantalla de login aparece el aviso: *“Si olvidaste tu contraseña, contacta al administrador del sistema.”*
+
+### Recuperación manual de emergencia
+
+Si un **administrador** también olvida su contraseña, no puede usar el panel sin sesión. En ese caso:
+
+- **Local:** editar directamente [`backend/data/tecnicos.xlsx`](backend/data/tecnicos.xlsx) y cambiar la columna Contraseña.
+- **Render:** abrir **Shell** del servicio en el dashboard de Render y editar `/var/data/tecnicos.xlsx`, o subir el archivo corregido al disco persistente montado en `/var/data`.
+
+Los restablecimientos desde el panel también persisten en la misma ruta (`DATA_DIR`).
 
 Para generar un archivo de ejemplo:
 

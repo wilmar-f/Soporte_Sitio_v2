@@ -435,6 +435,21 @@
   color: var(--color-texto, #1a2a4a);
 }
 
+.modal-clave__subtitulo {
+  margin: -8px 0 16px;
+  font-size: 13px;
+  color: var(--color-texto-suave, #5a6a8a);
+}
+
+.btn--sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.admin-usuarios-panel .noticias-table td:last-child {
+  white-space: nowrap;
+}
+
 .modal-clave__form .campo {
   margin-bottom: 14px;
 }

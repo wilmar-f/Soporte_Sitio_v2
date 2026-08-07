@@ -227,11 +227,78 @@ function updateContrasena(cedulaInput, contrasenaActual, contrasenaNueva) {
   return { ok: true };
 }
 
+/** Lista técnicos sin exponer contraseñas. */
+function listTecnicosSeguro() {
+  return getTecnicos().map(({ cedula, nombreCompleto, cargo, rol }) => ({
+    cedula,
+    nombreCompleto,
+    cargo,
+    rol,
+  }));
+}
+
+/**
+ * Restablece contraseña sin pedir la actual (solo administrador).
+ * @throws Error con code USER_NOT_FOUND | WRITE_ERROR
+ */
+function adminResetContrasena(cedulaInput, contrasenaNueva) {
+  const cedula = normalizeCedula(cedulaInput);
+  if (!cedula) {
+    const err = new Error('Usuario no encontrado');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  const { workbook, sheetName, tecnicosPath } = readWorkbook();
+  const sheet = workbook.Sheets[sheetName];
+  const cols = findHeaderColumns(sheet);
+
+  if (!cols) {
+    const err = new Error('Usuario no encontrado');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  const { range, cedulaCol, passCol } = cols;
+  let found = false;
+
+  for (let r = range.s.r + 1; r <= range.e.r; r++) {
+    const cedulaCellRef = XLSX.utils.encode_cell({ r, c: cedulaCol });
+    const cedulaCell = sheet[cedulaCellRef];
+    if (normalizeCedula(cedulaCell?.v) !== cedula) continue;
+
+    const passCellRef = XLSX.utils.encode_cell({ r, c: passCol });
+    sheet[passCellRef] = { t: 's', v: contrasenaNueva };
+    found = true;
+    break;
+  }
+
+  if (!found) {
+    const err = new Error('Usuario no encontrado');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  try {
+    writeWorkbookAtomic(workbook, tecnicosPath);
+    reloadTecnicos();
+  } catch (writeErr) {
+    const err = new Error('No se pudo guardar la nueva contraseña');
+    err.code = 'WRITE_ERROR';
+    err.cause = writeErr;
+    throw err;
+  }
+
+  return { ok: true };
+}
+
 module.exports = {
   getTecnicos,
   reloadTecnicos,
   findTecnicoByCedula,
   updateContrasena,
+  listTecnicosSeguro,
+  adminResetContrasena,
   normalizeCedula,
   normalizeRol,
   getTecnicosPath,

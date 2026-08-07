@@ -69,6 +69,15 @@
   cursor: not-allowed;
 }
 
+.login-card__ayuda {
+  margin: 0;
+  padding: 0 28px 24px;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--color-texto-suave, #5a6a8a);
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .login-card__encabezado { padding: 28px 20px 22px; }

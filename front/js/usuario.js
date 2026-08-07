@@ -18,6 +18,7 @@ import {
 } from './diagnostico-logica.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
 import { renderPanelNoticias, esRolAdministrador } from './noticias.js';
+import { renderPanelUsuarios } from './admin-usuarios.js';
 
 const MAX_EVIDENCIAS = 4;
 let evidenciasAdjuntas = [];
@@ -306,6 +307,9 @@ function renderInfoUsuario() {
   const btnNoticias = document.getElementById('btn-noticias');
   setSidebarBtnVisible(btnNoticias, esAdministrador());
 
+  const btnUsuarios = document.getElementById('btn-usuarios');
+  setSidebarBtnVisible(btnUsuarios, esAdministrador());
+
   const btnCambiarContrasena = document.getElementById('btn-cambiar-contrasena');
   setSidebarBtnVisible(btnCambiarContrasena, tipo === 'admin');
 }
@@ -342,6 +346,14 @@ function registrarEventosSidebar() {
     btnNoticias.addEventListener('click', () => {
       activarBotonSidebar('btn-noticias');
       renderPanelNoticias(tokenGuardado);
+    });
+  }
+
+  const btnUsuarios = document.getElementById('btn-usuarios');
+  if (btnUsuarios && esAdministrador()) {
+    btnUsuarios.addEventListener('click', () => {
+      activarBotonSidebar('btn-usuarios');
+      renderPanelUsuarios(tokenGuardado);
     });
   }
 

@@ -28,5 +28,15 @@
     "tipoDiagnostico": "DAAS",
     "serial": "41AXM75",
     "etiqueta": "0021205"
+  },
+  {
+    "id": "afc84304-533c-4dd5-8350-11c2083c0760",
+    "createdAt": "2026-08-07T18:32:55.947Z",
+    "fecha": "2026-08-07",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "ESTANDAR",
+    "serial": "41AXM75",
+    "etiqueta": "0021205"
   }
 ]
