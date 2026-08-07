@@ -38,5 +38,15 @@
     "tipoDiagnostico": "ESTANDAR",
     "serial": "41AXM75",
     "etiqueta": "0021205"
+  },
+  {
+    "id": "33df164e-409d-4a55-8250-8b1a96764837",
+    "createdAt": "2026-08-07T19:23:18.064Z",
+    "fecha": "2026-08-07",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "GESTOR_GARANTIAS",
+    "serial": "41AXM75",
+    "etiqueta": "0021205"
   }
 ]

@@ -5,8 +5,8 @@ import { toast } from './toast.js';
 
 const TIPOS_LABEL = {
   ESTANDAR: 'DIAGNOSTICO CON ACTIVOS',
+  GESTOR_GARANTIAS: 'DIAGNOSTICO CON GESTOR GARANTIAS',
   DAAS: 'DAAS',
-  OBSOLESCENCIA: 'OBSOLESCENCIA',
 };
 
 const PAGE_SIZE = 20;
@@ -52,8 +52,8 @@ function buildTipoOptions(selected) {
   const opts = [
     { value: '', label: 'Todos los tipos' },
     { value: 'ESTANDAR', label: 'DIAGNOSTICO CON ACTIVOS' },
+    { value: 'GESTOR_GARANTIAS', label: 'DIAGNOSTICO CON GESTOR GARANTIAS' },
     { value: 'DAAS', label: 'DAAS' },
-    { value: 'OBSOLESCENCIA', label: 'OBSOLESCENCIA' },
   ];
   return opts.map(o =>
     `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`

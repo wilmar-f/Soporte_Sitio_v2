@@ -2,8 +2,7 @@
  * diagnostico-logica.js — Selección interactiva para los 3 campos de diagnóstico.
  * Genera texto estandarizado para el PDF (sin texto libre del técnico).
  *
- * Alcance actual: DIAGNOSTICO CON ACTIVOS y DAAS + DESKTOP/LAPTOP.
- * TODO: agregar flujos OBSOLESCENCIA y demás tipos de activo.
+ * Alcance actual: DIAGNOSTICO CON ACTIVOS, GESTOR GARANTIAS y DAAS + DESKTOP/LAPTOP.
  */
 
 /* ══════════════════════════════════════════════════════
@@ -12,8 +11,8 @@
 
 export const TIPOS_DIAGNOSTICO = [
   { value: 'ESTANDAR', label: 'DIAGNOSTICO CON ACTIVOS', enabled: true },
+  { value: 'GESTOR_GARANTIAS', label: 'DIAGNOSTICO CON GESTOR GARANTIAS', enabled: true },
   { value: 'DAAS', label: 'DAAS', enabled: true },
-  { value: 'OBSOLESCENCIA', label: 'OBSOLESCENCIA', enabled: false },
 ];
 
 export const TIPOS_ACTIVO = [
@@ -94,11 +93,13 @@ export const CAMBIO_PARTES = [
   'Cooler',
   'Fan CPU',
   'Repuesto de backup',
+  'Pruebas de funcionamiento',
   'NINGUNA',
 ];
 
 export const REPUESTOS_AVERIADOS = [
   'Adaptador',
+  'Almacenamiento HDD/SSD',
   'Board/Tarjeta principal',
   'Cable usb',
   'Cargador de energía',
@@ -107,8 +108,7 @@ export const REPUESTOS_AVERIADOS = [
   'Fuente de poder',
   'Mouse',
   'Pila',
-  'Ram',
-  'Ssd',
+  'RAM',
   'Teclado',
 ];
 
@@ -192,6 +192,15 @@ function esModoEstandar() {
   return getTipoDiagnostico() === 'ESTANDAR';
 }
 
+function esModoGestorGarantias() {
+  return getTipoDiagnostico() === 'GESTOR_GARANTIAS';
+}
+
+function esModoFlujoDesktop() {
+  const t = getTipoDiagnostico();
+  return t === 'ESTANDAR' || t === 'GESTOR_GARANTIAS';
+}
+
 function activoDaasOk() {
   const tipoActivo = document.getElementById('diag-activo')?.value;
   return ACTIVOS_DAAS.includes(tipoActivo);
@@ -234,7 +243,7 @@ export function construirDescripcionFalla() {
   const detalleHw = document.getElementById('diag-falla-hardware')?.value;
   const detalleSw = document.getElementById('diag-falla-software')?.value;
 
-  if (tipoDiag !== 'ESTANDAR') return '';
+  if (!esModoFlujoDesktop()) return '';
   if (!ACTIVOS_DAAS.includes(tipoActivo)) return '';
 
   let detalle = '';
@@ -291,12 +300,34 @@ export function construirAccionesRealizadas() {
   return `Se procede con la revisión general del equipo, se realizaron ${listaAcciones} sin dar solución a la falla reportada.\n\nSe realizaron pruebas con cambio de partes ${listaPartes} y la falla persiste.`;
 }
 
+function construirDiagnosticoFinalGestor() {
+  const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
+  const caso = document.getElementById('diag-final-caso')?.value?.trim() || '';
+  const flujo = getRadioValue('diag-final-flujo');
+
+  if (!repuesto || !caso || !flujo || caso.length > 15) return '';
+
+  if (flujo === 'taller') {
+    return `Por el daño encontrado se debe enviar el activo para su revisión y diagnostico por parte del servicio técnico autorizado.\n\nSe escala con el No. de Caso: ${caso}`;
+  }
+
+  if (flujo === 'cotizar') {
+    return `El daño es ${repuesto}. Se debe cambiar la parte.\n\nSe escala caso al Gestor de Garantias/Almacen de Activos para cotizar valor de repuestos. No. de Caso: ${caso}`;
+  }
+
+  return '';
+}
+
 export function construirDiagnosticoFinal() {
   if (esModoDaas()) {
     if (!activoDaasOk()) return '';
     const cosmeticas = getRadioValue('diag-daas-cosmeticas');
     if (!cosmeticas) return '';
     return DAAS_TEXTOS.diagnosticoFinal;
+  }
+
+  if (esModoGestorGarantias()) {
+    return construirDiagnosticoFinalGestor();
   }
 
   const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
@@ -353,6 +384,10 @@ export function validarDiagnosticoInteractivo() {
     return { valido: true, mensaje: '' };
   }
 
+  if (!esModoFlujoDesktop()) {
+    return { valido: true, mensaje: '' };
+  }
+
   const { descripcionFalla, accionesRealizadas, diagnosticoFinal } = getValoresDiagnostico();
 
   if (!descripcionFalla || !accionesRealizadas) {
@@ -362,10 +397,46 @@ export function validarDiagnosticoInteractivo() {
     };
   }
 
-  if (!diagnosticoFinal) {
+  if (esModoGestorGarantias()) {
+    const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
+    const caso = document.getElementById('diag-final-caso')?.value?.trim() || '';
+    const flujo = getRadioValue('diag-final-flujo');
+
+    if (!repuesto) {
+      return {
+        valido: false,
+        mensaje: 'Seleccione el repuesto averiado en Diagnóstico final.',
+      };
+    }
+    if (!caso) {
+      return {
+        valido: false,
+        mensaje: 'Indique el N° de caso escalado al Gestor Garantias.',
+      };
+    }
+    if (caso.length > 15) {
+      return {
+        valido: false,
+        mensaje: 'El N° de caso no puede superar 15 caracteres.',
+      };
+    }
+    if (!flujo) {
+      return {
+        valido: false,
+        mensaje: 'Indique el flujo a seguir en Diagnóstico final.',
+      };
+    }
+  } else if (!diagnosticoFinal) {
     return {
       valido: false,
       mensaje: 'Seleccione el repuesto averiado en Diagnóstico final.',
+    };
+  }
+
+  if (!diagnosticoFinal) {
+    return {
+      valido: false,
+      mensaje: 'Complete Diagnóstico final.',
     };
   }
 
@@ -405,19 +476,19 @@ function actualizarDaasDetallesPanel() {
 function actualizarModoDiagnostico() {
   const tipoDiag = getTipoDiagnostico();
   const esDaas = tipoDiag === 'DAAS';
-  const esEstandar = tipoDiag === 'ESTANDAR';
+  const esFlujoDesktop = esModoFlujoDesktop();
 
   const paso2 = document.getElementById('diag-paso-activo');
   const paso3 = document.getElementById('diag-paso-tipo-falla');
   const paso4 = document.getElementById('diag-paso-detalle-falla');
 
-  const activoHabilitado = esDaas || esEstandar;
+  const activoHabilitado = esDaas || esFlujoDesktop;
   setPasoEnabled(paso2, activoHabilitado);
 
   const tipoActivo = document.getElementById('diag-activo')?.value;
   const activoSeleccionado = activoHabilitado && ACTIVOS_DAAS.includes(tipoActivo);
 
-  if (esEstandar) {
+  if (esFlujoDesktop) {
     setPasoEnabled(paso3, activoSeleccionado);
     const tipoFalla = getRadioValue('diag-tipo-falla');
     setPasoEnabled(paso4, activoSeleccionado && !!tipoFalla);
@@ -430,12 +501,13 @@ function actualizarModoDiagnostico() {
   const panelSw = document.getElementById('diag-panel-software');
   const tipoFalla = getRadioValue('diag-tipo-falla');
   if (panelHw && panelSw) {
-    panelHw.style.display = esEstandar && tipoFalla === 'HARDWARE' ? '' : 'none';
-    panelSw.style.display = esEstandar && tipoFalla === 'SOFTWARE' ? '' : 'none';
+    panelHw.style.display = esFlujoDesktop && tipoFalla === 'HARDWARE' ? '' : 'none';
+    panelSw.style.display = esFlujoDesktop && tipoFalla === 'SOFTWARE' ? '' : 'none';
   }
 
-  setBloqueVisible('diag-bloque-acciones', esEstandar);
-  setBloqueVisible('diag-bloque-final', esEstandar);
+  setBloqueVisible('diag-bloque-acciones', esFlujoDesktop);
+  setBloqueVisible('diag-bloque-final', esFlujoDesktop);
+  setBloqueVisible('diag-final-gestor', esModoGestorGarantias());
   setBloqueVisible('diag-bloque-daas', esDaas && activoSeleccionado);
 
   actualizarDaasDetallesPanel();
@@ -468,6 +540,11 @@ export function resetDiagnosticoInteractivo() {
 
   const repuesto = document.getElementById('diag-final-repuesto');
   if (repuesto) repuesto.selectedIndex = 0;
+
+  const caso = document.getElementById('diag-final-caso');
+  if (caso) caso.value = '';
+
+  form.querySelectorAll('input[name="diag-final-flujo"]').forEach(el => { el.checked = false; });
 
   const daasDetalles = document.getElementById('diag-daas-detalles');
   if (daasDetalles) daasDetalles.style.display = 'none';
@@ -626,6 +703,21 @@ export function renderDiagnosticoInteractivo() {
             ${optsRepuesto}
           </select>
         </div>
+        <div id="diag-final-gestor" style="display:none;">
+          <div class="diagnostico-subseccion">
+            <label class="diagnostico-paso-label" for="diag-final-caso">Indique el N° caso escalado al Gestor Garantias</label>
+            <input type="text" id="diag-final-caso" class="diag-control" maxlength="15" autocomplete="off" placeholder="Ej. REQ 2026-158274">
+          </div>
+          <div class="diagnostico-subseccion">
+            <span class="diagnostico-paso-label">Indicar flujo a seguir</span>
+            <div class="diagnostico-radio-group">
+              ${renderRadioGroup('diag-final-flujo', [
+                { value: 'taller', label: 'Enviar a taller autorizado' },
+                { value: 'cotizar', label: 'Cotizar repuestos averiados' },
+              ], 'diag-ff')}
+            </div>
+          </div>
+        </div>
       </div>
       <div class="diagnostico-preview-wrap">
         <span class="diagnostico-preview__label">Vista previa</span>
@@ -688,6 +780,13 @@ export function initDiagnosticoInteractivo() {
 
   const repuesto = document.getElementById('diag-final-repuesto');
   if (repuesto) repuesto.addEventListener('change', actualizarDiagnosticoFinal);
+
+  const casoInput = document.getElementById('diag-final-caso');
+  if (casoInput) casoInput.addEventListener('input', actualizarDiagnosticoFinal);
+
+  form.querySelectorAll('input[name="diag-final-flujo"]').forEach(el => {
+    el.addEventListener('change', actualizarDiagnosticoFinal);
+  });
 
   actualizarTodo();
 }
