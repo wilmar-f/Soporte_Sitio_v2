@@ -48,5 +48,25 @@
     "tipoDiagnostico": "GESTOR_GARANTIAS",
     "serial": "41AXM75",
     "etiqueta": "0021205"
+  },
+  {
+    "id": "3eac442a-9c3d-4156-94d9-ac18d005e8b8",
+    "createdAt": "2026-08-10T02:06:25.041Z",
+    "fecha": "2026-08-10",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "RENOVACION",
+    "serial": "41AXM75",
+    "etiqueta": "0021205"
+  },
+  {
+    "id": "fcc826c8-4e1f-49ff-ac43-285b1e43f93b",
+    "createdAt": "2026-08-10T02:06:31.823Z",
+    "fecha": "2026-08-10",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "RENOVACION",
+    "serial": "41AXM75",
+    "etiqueta": "0021205"
   }
 ]

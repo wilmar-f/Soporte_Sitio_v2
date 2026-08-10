@@ -2,7 +2,7 @@
  * diagnostico-logica.js — Selección interactiva para los 3 campos de diagnóstico.
  * Genera texto estandarizado para el PDF (sin texto libre del técnico).
  *
- * Alcance actual: DIAGNOSTICO CON ACTIVOS, GESTOR GARANTIAS y DAAS + DESKTOP/LAPTOP.
+ * Alcance actual: DIAGNOSTICO CON ACTIVOS, GESTOR GARANTIAS, RENOVACION y DAAS + DESKTOP/LAPTOP.
  */
 
 /* ══════════════════════════════════════════════════════
@@ -12,6 +12,7 @@
 export const TIPOS_DIAGNOSTICO = [
   { value: 'ESTANDAR', label: 'DIAGNOSTICO CON ACTIVOS', enabled: true },
   { value: 'GESTOR_GARANTIAS', label: 'DIAGNOSTICO CON GESTOR GARANTIAS', enabled: true },
+  { value: 'RENOVACION', label: 'DIAGNOSTICO RENOVACION', enabled: true },
   { value: 'DAAS', label: 'DAAS', enabled: true },
 ];
 
@@ -196,9 +197,13 @@ function esModoGestorGarantias() {
   return getTipoDiagnostico() === 'GESTOR_GARANTIAS';
 }
 
+function esModoRenovacion() {
+  return getTipoDiagnostico() === 'RENOVACION';
+}
+
 function esModoFlujoDesktop() {
   const t = getTipoDiagnostico();
-  return t === 'ESTANDAR' || t === 'GESTOR_GARANTIAS';
+  return t === 'ESTANDAR' || t === 'GESTOR_GARANTIAS' || t === 'RENOVACION';
 }
 
 function activoDaasOk() {
@@ -303,7 +308,7 @@ export function construirAccionesRealizadas() {
 function construirDiagnosticoFinalGestor() {
   const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
   const caso = document.getElementById('diag-final-caso')?.value?.trim() || '';
-  const flujo = getRadioValue('diag-final-flujo');
+  const flujo = getRadioValue('diag-final-flujo-gestor');
 
   if (!repuesto || !caso || !flujo || caso.length > 15) return '';
 
@@ -313,6 +318,23 @@ function construirDiagnosticoFinalGestor() {
 
   if (flujo === 'cotizar') {
     return `El daño es ${repuesto}. Se debe cambiar la parte.\n\nSe escala caso al Gestor de Garantias/Almacen de Activos para cotizar valor de repuestos. No. de Caso: ${caso}`;
+  }
+
+  return '';
+}
+
+function construirDiagnosticoFinalRenovacion() {
+  const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
+  const flujo = getRadioValue('diag-final-flujo-renovacion');
+
+  if (!repuesto || !flujo) return '';
+
+  if (flujo === 'obsolescencia') {
+    return `El daño es ${repuesto}.\n\nEl activo tiene costo neto $0 COP, por lo cual no es viable asumir costos de reparación. El equipo no cumple con las especificaciones técnicas para el trabajo a realizar, no es actualizable a nivel de hardware.`;
+  }
+
+  if (flujo === 'costo_repuestos') {
+    return `El daño es ${repuesto}.\n\nDe acuerdo con la cotización enviada por el taller autorizado, el costo de reparación supera el valor neto actual del activo, razón por la cual el negocio aprueba su renovación.`;
   }
 
   return '';
@@ -328,6 +350,10 @@ export function construirDiagnosticoFinal() {
 
   if (esModoGestorGarantias()) {
     return construirDiagnosticoFinalGestor();
+  }
+
+  if (esModoRenovacion()) {
+    return construirDiagnosticoFinalRenovacion();
   }
 
   const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
@@ -400,7 +426,7 @@ export function validarDiagnosticoInteractivo() {
   if (esModoGestorGarantias()) {
     const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
     const caso = document.getElementById('diag-final-caso')?.value?.trim() || '';
-    const flujo = getRadioValue('diag-final-flujo');
+    const flujo = getRadioValue('diag-final-flujo-gestor');
 
     if (!repuesto) {
       return {
@@ -424,6 +450,22 @@ export function validarDiagnosticoInteractivo() {
       return {
         valido: false,
         mensaje: 'Indique el flujo a seguir en Diagnóstico final.',
+      };
+    }
+  } else if (esModoRenovacion()) {
+    const repuesto = document.getElementById('diag-final-repuesto')?.value || '';
+    const flujo = getRadioValue('diag-final-flujo-renovacion');
+
+    if (!repuesto) {
+      return {
+        valido: false,
+        mensaje: 'Seleccione el repuesto averiado en Diagnóstico final.',
+      };
+    }
+    if (!flujo) {
+      return {
+        valido: false,
+        mensaje: 'Indique el tipo de renovación en Diagnóstico final.',
       };
     }
   } else if (!diagnosticoFinal) {
@@ -507,7 +549,9 @@ function actualizarModoDiagnostico() {
 
   setBloqueVisible('diag-bloque-acciones', esFlujoDesktop);
   setBloqueVisible('diag-bloque-final', esFlujoDesktop);
-  setBloqueVisible('diag-final-gestor', esModoGestorGarantias());
+  setBloqueVisible('diag-final-gestor-caso', esModoGestorGarantias());
+  setBloqueVisible('diag-final-flujo-gestor', esModoGestorGarantias());
+  setBloqueVisible('diag-final-flujo-renovacion', esModoRenovacion());
   setBloqueVisible('diag-bloque-daas', esDaas && activoSeleccionado);
 
   actualizarDaasDetallesPanel();
@@ -544,7 +588,8 @@ export function resetDiagnosticoInteractivo() {
   const caso = document.getElementById('diag-final-caso');
   if (caso) caso.value = '';
 
-  form.querySelectorAll('input[name="diag-final-flujo"]').forEach(el => { el.checked = false; });
+  form.querySelectorAll('input[name="diag-final-flujo-gestor"]').forEach(el => { el.checked = false; });
+  form.querySelectorAll('input[name="diag-final-flujo-renovacion"]').forEach(el => { el.checked = false; });
 
   const daasDetalles = document.getElementById('diag-daas-detalles');
   if (daasDetalles) daasDetalles.style.display = 'none';
@@ -703,18 +748,31 @@ export function renderDiagnosticoInteractivo() {
             ${optsRepuesto}
           </select>
         </div>
-        <div id="diag-final-gestor" style="display:none;">
+        <div id="diag-final-gestor-caso" style="display:none;">
           <div class="diagnostico-subseccion">
             <label class="diagnostico-paso-label" for="diag-final-caso">Indique el N° caso escalado al Gestor Garantias</label>
             <input type="text" id="diag-final-caso" class="diag-control" maxlength="15" autocomplete="off" placeholder="Ej. REQ 2026-158274">
           </div>
+        </div>
+        <div id="diag-final-flujo-gestor" style="display:none;">
           <div class="diagnostico-subseccion">
             <span class="diagnostico-paso-label">Indicar flujo a seguir</span>
             <div class="diagnostico-radio-group">
-              ${renderRadioGroup('diag-final-flujo', [
+              ${renderRadioGroup('diag-final-flujo-gestor', [
                 { value: 'taller', label: 'Enviar a taller autorizado' },
                 { value: 'cotizar', label: 'Cotizar repuestos averiados' },
-              ], 'diag-ff')}
+              ], 'diag-ff-gestor')}
+            </div>
+          </div>
+        </div>
+        <div id="diag-final-flujo-renovacion" style="display:none;">
+          <div class="diagnostico-subseccion">
+            <span class="diagnostico-paso-label">Indicar flujo a seguir</span>
+            <div class="diagnostico-radio-group">
+              ${renderRadioGroup('diag-final-flujo-renovacion', [
+                { value: 'obsolescencia', label: 'Renovacion 1-obsolescencia' },
+                { value: 'costo_repuestos', label: 'Renovacion 2-costo repuestos elevado' },
+              ], 'diag-ff-renovacion')}
             </div>
           </div>
         </div>
@@ -784,7 +842,11 @@ export function initDiagnosticoInteractivo() {
   const casoInput = document.getElementById('diag-final-caso');
   if (casoInput) casoInput.addEventListener('input', actualizarDiagnosticoFinal);
 
-  form.querySelectorAll('input[name="diag-final-flujo"]').forEach(el => {
+  form.querySelectorAll('input[name="diag-final-flujo-gestor"]').forEach(el => {
+    el.addEventListener('change', actualizarDiagnosticoFinal);
+  });
+
+  form.querySelectorAll('input[name="diag-final-flujo-renovacion"]').forEach(el => {
     el.addEventListener('change', actualizarDiagnosticoFinal);
   });
 

@@ -6,6 +6,7 @@ import { toast } from './toast.js';
 const TIPOS_LABEL = {
   ESTANDAR: 'DIAGNOSTICO CON ACTIVOS',
   GESTOR_GARANTIAS: 'DIAGNOSTICO CON GESTOR GARANTIAS',
+  RENOVACION: 'DIAGNOSTICO RENOVACION',
   DAAS: 'DAAS',
 };
 
@@ -53,6 +54,7 @@ function buildTipoOptions(selected) {
     { value: '', label: 'Todos los tipos' },
     { value: 'ESTANDAR', label: 'DIAGNOSTICO CON ACTIVOS' },
     { value: 'GESTOR_GARANTIAS', label: 'DIAGNOSTICO CON GESTOR GARANTIAS' },
+    { value: 'RENOVACION', label: 'DIAGNOSTICO RENOVACION' },
     { value: 'DAAS', label: 'DAAS' },
   ];
   return opts.map(o =>
