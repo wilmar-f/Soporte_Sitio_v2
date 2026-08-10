@@ -235,13 +235,14 @@ const SEDES_CODIGOS = [
    ══════════════════════════════════════════════════════ */
 let datosUsuarios   = [];  // [{cedula, nombreUsuario}]
 let datosInventario = [];  // [{serial, etiqueta, fabricante, modelo}]
+let inventarioListo = Promise.resolve();
 
 /* ══════════════════════════════════════════════════════
    4. INICIALIZACIÓN
    ══════════════════════════════════════════════════════ */
 renderBanner();
 renderInfoUsuario();
-cargarDatosIniciales();
+inventarioListo = cargarDatosIniciales();
 registrarEventosSidebar();
 
 /* ── Renderiza datos del usuario en el sidebar ─────── */
@@ -314,7 +315,24 @@ function renderInfoUsuario() {
   setSidebarBtnVisible(btnCambiarContrasena, tipo === 'admin');
 }
 
-/* ── Carga ambos CSVs al iniciar ───────────────────── */
+/* ── Carga datos maestros al iniciar ───────────────── */
+async function recargarInventario() {
+  try {
+    const res = await fetch('/api/inventario', {
+      headers: { Authorization: `Bearer ${tokenGuardado}` },
+    });
+    if (res.ok) {
+      datosInventario = await res.json();
+      return true;
+    }
+    console.error('Error recargando inventario:', res.status);
+    return false;
+  } catch (err) {
+    console.error('Error recargando inventario:', err);
+    return false;
+  }
+}
+
 async function cargarDatosIniciales() {
   try {
     const [resUsuarios, resInventario] = await Promise.all([
@@ -324,6 +342,10 @@ async function cargarDatosIniciales() {
 
     if (resUsuarios.ok)   datosUsuarios   = await resUsuarios.json();
     if (resInventario.ok) datosInventario = await resInventario.json();
+
+    if (!resInventario.ok || datosInventario.length === 0) {
+      toast('No se pudo cargar el inventario.', 'advertencia');
+    }
 
     console.log(`Cargados: ${datosUsuarios.length} usuarios, ${datosInventario.length} equipos de inventario`);
   } catch (err) {
@@ -527,11 +549,26 @@ function limpiarCamposEquipo() {
 /**
  * Autocompleta Marca, Modelo y Etiqueta según serial.
  * Marca y Modelo se normalizan a MAYÚSCULAS.
- * @returns {boolean} true si el serial existe en inventario
+ * @returns {Promise<boolean>} true si el serial existe en inventario
  */
-function autocompletarEquipoPorSerial(serial) {
+async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) {
   const inputSerial = document.getElementById('serial');
-  const equipo = buscarEquipoPorSerial(serial);
+  await inventarioListo;
+
+  if (datosInventario.length === 0) {
+    await recargarInventario();
+    if (datosInventario.length === 0) {
+      toast('No se pudo cargar el inventario.', 'error');
+      return false;
+    }
+  }
+
+  let equipo = buscarEquipoPorSerial(serial);
+
+  if (!equipo && reintentar) {
+    await recargarInventario();
+    equipo = buscarEquipoPorSerial(serial);
+  }
 
   if (!equipo) {
     limpiarCamposEquipo();
@@ -815,13 +852,13 @@ function registrarEventosFormulario() {
 
   // Autocompletado: Marca, Modelo y Etiqueta por serial
   const inputSerial = document.getElementById('serial');
-  inputSerial.addEventListener('blur', () => {
+  inputSerial.addEventListener('blur', async () => {
     const serial = inputSerial.value.trim();
     if (!serial) {
       limpiarCamposEquipo();
       return;
     }
-    autocompletarEquipoPorSerial(serial);
+    await autocompletarEquipoPorSerial(serial);
   });
 
   initDiagnosticoInteractivo();
@@ -1086,7 +1123,7 @@ function initEvidenciasInput() {
 /* ══════════════════════════════════════════════════════
    9. VALIDACIÓN DEL FORMULARIO
    ══════════════════════════════════════════════════════ */
-function validarFormulario() {
+async function validarFormulario() {
   let valido = true;
   const errores = [];
 
@@ -1142,10 +1179,18 @@ function validarFormulario() {
   // Validar que el serial exista en inventario (bloquea PDF si no existe)
   const serialEl = document.getElementById('serial');
   const serialVal = serialEl.value.trim();
-  if (serialVal && !buscarEquipoPorSerial(serialVal)) {
-    marcarInvalido(serialEl);
-    toast('El serial no existe en el inventario. No se puede generar el PDF.', 'error');
-    valido = false;
+  if (serialVal) {
+    await inventarioListo;
+    let equipoSerial = buscarEquipoPorSerial(serialVal);
+    if (!equipoSerial) {
+      await recargarInventario();
+      equipoSerial = buscarEquipoPorSerial(serialVal);
+    }
+    if (!equipoSerial) {
+      marcarInvalido(serialEl);
+      toast('El serial no existe en el inventario. No se puede generar el PDF.', 'error');
+      valido = false;
+    }
   }
 
   const diagVal = validarDiagnosticoInteractivo();
@@ -1245,7 +1290,7 @@ function recopilarValores() {
    ══════════════════════════════════════════════════════ */
 
 async function generarPDF() {
-  if (!validarFormulario()) return;
+  if (!(await validarFormulario())) return;
 
   const btnGenerar = document.getElementById('btn-generar');
   btnGenerar.disabled = true;

@@ -40,13 +40,15 @@ Desarrollado con HTML5 / CSS / JavaScript Vanilla en el frontend y Node.js (Expr
 │   ├── utils/
 │   │   ├── renderDiagnostico.js  ← Handlebars + logos embebidos
 │   │   ├── readTecnicos.js       ← Login técnicos desde Excel
+│   │   ├── readInventario.js     ← Inventario desde Excel
 │   │   └── renderEvidencias.js   ← Página 2 PDF evidencias
 │   ├── middleware/
 │   │   └── authMiddleware.js     ← JWT (reservado para rutas futuras)
 │   ├── data/
 │   │   ├── tecnicos.xlsx         ← Cédula, contraseña, nombre y cargo (login)
 │   │   ├── usuarios.csv          ← Datos para autocompletar nombre por cédula
-│   │   └── inventario.csv        ← Datos para autocompletar etiqueta por serial
+│   │   ├── inventario.xlsx       ← Datos para autocompletar equipo por serial
+│   │   └── inventario.csv        ← Respaldo / export legacy (no lo lee la app)
 │   ├── templates/
 │   │   ├── diagnostico.template.html  ← Vista previa admin (GET /api/template)
 │   │   ├── diagnostico.template.hbs   ← PDF servidor (Handlebars)
@@ -170,11 +172,39 @@ Los archivos CSV son leídos del disco en **cada petición** al endpoint, por lo
 5. Copiar el archivo a `/backend/data/usuarios.csv` (sobreescribir).
 6. Refrescar la página en el navegador (los datos se cargan al entrar a `usuario.html`).
 
-### inventario.csv (para autocompletar etiqueta por serial)
+### inventario.xlsx (autocompletar marca, modelo y etiqueta por serial)
 
-1. Mismo proceso que usuarios.csv.
-2. Encabezados requeridos exactos (primera fila): `Nº serie;Etiqueta`
-3. Copiar el archivo a `/backend/data/inventario.csv`.
+El inventario se gestiona en Excel, igual que `tecnicos.xlsx`. La app lee [`backend/data/inventario.xlsx`](backend/data/inventario.xlsx) (local) o `/var/data/inventario.xlsx` en Render (`DATA_DIR`).
+
+| Columna | Descripción |
+|---------|-------------|
+| Nº serie | Serial del equipo (obligatorio) |
+| Etiqueta | Etiqueta de inventario (7 caracteres) |
+| Fabricante | Marca del equipo (se autocompleta en "Marca") |
+| Modelo | Modelo del equipo (se autocompleta en "Modelo") |
+
+**Actualizar en local**
+
+1. Edita `backend/data/inventario.xlsx` en Excel (conserva los encabezados de la primera fila).
+2. Guarda el archivo. No hace falta reiniciar el servidor: la API relee el Excel en cada petición.
+3. En el navegador, al salir del campo Serial se vuelve a consultar el inventario si no encuentra el serial en memoria.
+
+**Actualizar en Render**
+
+- **Opción A (recomendada):** commit + push del `inventario.xlsx` actualizado y redeploy.
+- **Opción B:** reemplazar `/var/data/inventario.xlsx` en el disco persistente (sin redeploy), igual que con técnicos.
+
+**Migrar desde inventario.csv**
+
+Si recibes un export CSV con delimitador `;`:
+
+```bash
+node backend/scripts/csv-to-inventario-xlsx.js [ruta_origen.csv]
+```
+
+Genera `backend/data/inventario.xlsx`. El archivo `inventario.csv` queda como respaldo; la aplicación ya no lo lee directamente.
+
+> **Nota:** algunos modelos con comillas (`24" APPLE…`) rompían el parser CSV antiguo y omitían miles de equipos. El flujo Excel evita ese problema.
 
 ---
 
@@ -184,7 +214,7 @@ Los archivos CSV son leídos del disco en **cada petición** al endpoint, por lo
 |--------|-------------------|------------------------------------------------|
 | POST   | /api/login        | Autenticación. Body: `{usuario, contrasena}`   |
 | GET    | /api/usuarios     | Retorna `[{cedula, nombreUsuario}]` desde CSV  |
-| GET    | /api/inventario   | Retorna `[{serial, etiqueta}]` desde CSV       |
+| GET    | /api/inventario   | Retorna `[{serial, etiqueta, fabricante, modelo}]` desde Excel |
 | GET    | /api/template     | Retorna el HTML de la plantilla de diagnóstico |
 | POST   | /api/generar-pdf  | Genera PDF carta con Puppeteer. Body: campos del formulario + `firmaBase64` |
 

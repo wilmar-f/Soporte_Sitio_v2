@@ -22,6 +22,13 @@ function bootstrapDataFiles() {
     console.log(`Bootstrap: tecnicos.xlsx copiado a ${targetTecnicos}`);
   }
 
+  const seedInventario = path.join(SEED_DATA_DIR, 'inventario.xlsx');
+  const targetInventario = path.join(dataDir, 'inventario.xlsx');
+  if (!fs.existsSync(targetInventario) && fs.existsSync(seedInventario)) {
+    fs.copyFileSync(seedInventario, targetInventario);
+    console.log(`Bootstrap: inventario.xlsx copiado a ${targetInventario}`);
+  }
+
   const targetDiagnosticos = path.join(dataDir, 'diagnosticos.json');
   if (!fs.existsSync(targetDiagnosticos)) {
     const seedDiagnosticos = path.join(SEED_DATA_DIR, 'diagnosticos.json');
