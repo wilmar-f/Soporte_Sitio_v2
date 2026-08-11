@@ -666,8 +666,8 @@ function renderFormularioDiagnostico() {
             <input type="text" id="modelo" name="modelo" placeholder="Se autocompleta por serial" readonly required style="text-transform:uppercase;">
           </div>
           <div class="campo">
-            <label for="etiqueta">Etiqueta * <small>(exactamente 7 caracteres)</small></label>
-            <input type="text" id="etiqueta" name="etiqueta" placeholder="Se autocompleta por serial" maxlength="7" readonly required>
+            <label for="etiqueta">Etiqueta o Placa *</label>
+            <input type="text" id="etiqueta" name="etiqueta" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="procesador">Procesador *</label>
@@ -1164,17 +1164,6 @@ async function validarFormulario() {
       valido = false;
     }
   });
-
-  // Validar longitud de etiqueta
-  const etiquetaEl = document.getElementById('etiqueta');
-  const etiquetaVal = etiquetaEl.value.trim();
-  if (etiquetaVal && etiquetaVal.length !== 7) {
-    marcarInvalido(etiquetaEl);
-    if (!errores.includes('Etiqueta')) {
-      errores.push('Etiqueta (debe tener exactamente 7 caracteres)');
-    }
-    valido = false;
-  }
 
   // Validar que el serial exista en inventario (bloquea PDF si no existe)
   const serialEl = document.getElementById('serial');

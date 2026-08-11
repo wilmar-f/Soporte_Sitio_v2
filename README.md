@@ -178,10 +178,22 @@ El inventario se gestiona en Excel, igual que `tecnicos.xlsx`. La app lee [`back
 
 | Columna | Descripción |
 |---------|-------------|
-| Nº serie | Serial del equipo (obligatorio) |
-| Etiqueta | Etiqueta de inventario (7 caracteres) |
+| Serial (o Nº serie) | Serial del equipo (obligatorio) |
+| Etiqueta | Etiqueta o placa de inventario (se autocompleta en el formulario) |
 | Fabricante | Marca del equipo (se autocompleta en "Marca") |
 | Modelo | Modelo del equipo (se autocompleta en "Modelo") |
+
+El formulario muestra el campo como **Etiqueta o Placa** y no valida longitud fija: la calidad del dato debe garantizarla el encargado del inventario.
+
+**Validar calidad antes de desplegar**
+
+```bash
+cd backend
+npm run validate:inventario
+npm run validate:inventario -- --serial 8CC3151BHH
+```
+
+El script audita `inventario.xlsx` e informa etiquetas vacías, seriales duplicados, filas incompletas y advertencias de longitud distinta a 7 caracteres.
 
 **Actualizar en local**
 

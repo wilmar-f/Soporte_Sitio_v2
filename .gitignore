@@ -3,3 +3,6 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Documentación e informes locales (no requeridos por la app)
+docs/

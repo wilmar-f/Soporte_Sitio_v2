@@ -17,7 +17,7 @@ const LETTER_WIDTH_PX = 816;
 const LETTER_HEIGHT_PX = 1056;
 const DPI = 96;
 
-/** Márgenes visibles alineados con docs/referencia */
+/** Márgenes alineados con formato FR-BAI09.11 */
 const PDF_MARGINS = {
   top: '0.5in',
   right: '0.55in',
