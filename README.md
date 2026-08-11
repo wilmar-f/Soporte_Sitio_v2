@@ -191,9 +191,11 @@ El formulario muestra el campo como **Etiqueta o Placa** y no valida longitud fi
 cd backend
 npm run validate:inventario
 npm run validate:inventario -- --serial 8CC3151BHH
+npm run validate:inventario -- --output C:/ruta/errores.csv
+npm run validate:inventario -- --no-file
 ```
 
-El script audita `inventario.xlsx` e informa etiquetas vacías, seriales duplicados, filas incompletas y advertencias de longitud distinta a 7 caracteres.
+El script audita `inventario.xlsx` e informa etiquetas vacías, seriales duplicados, filas incompletas y advertencias de longitud distinta a 7 caracteres. En consola muestra un resumen y los primeros 20 seriales sin etiqueta; el detalle completo se exporta por defecto a `backend/data/reporte-validacion-inventario.csv` (columnas: Serial, Etiqueta, Fabricante, Modelo, Problema, Detalle). Usa `--no-file` si solo quieres la salida en terminal.
 
 **Actualizar en local**
 
