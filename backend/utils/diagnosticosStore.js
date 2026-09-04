@@ -45,6 +45,8 @@ function appendDiagnostico(record) {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     fecha: String(record.fecha ?? '').trim(),
+    sede: String(record.sede ?? '').trim(),
+    sedeCodigo: String(record.sedeCodigo ?? '').trim(),
     nombreTecnico: String(record.nombreTecnico ?? '').trim(),
     cedulaTecnico: String(record.cedulaTecnico ?? '').trim(),
     tipoDiagnostico: String(record.tipoDiagnostico ?? '').trim().toUpperCase(),
@@ -110,4 +112,5 @@ module.exports = {
   appendDiagnostico,
   listDiagnosticos,
   getAniosDisponibles,
+  readAll,
 };

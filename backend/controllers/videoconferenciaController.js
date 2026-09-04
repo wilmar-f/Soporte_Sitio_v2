@@ -1,4 +1,5 @@
 const { getCatalogo, existeSedeSala } = require('../utils/readVideoconferencia');
+const { appendFoto } = require('../utils/videoconferenciaLog');
 const {
   isConfigured,
   guardarFotoVideoconferencia,
@@ -61,6 +62,19 @@ exports.upload = async (req, res) => {
       buffer: decoded.buffer,
       reemplazar,
     });
+
+    try {
+      appendFoto({
+        sede,
+        sala,
+        filename: result.filename,
+        reemplazo: reemplazar,
+        cedulaTecnico: req.user?.cedula || '',
+        nombreTecnico: String(req.body?.nombreTecnico || '').trim(),
+      });
+    } catch (logErr) {
+      console.error('Error guardando log de videoconferencia:', logErr.message);
+    }
 
     res.json({
       ok: true,

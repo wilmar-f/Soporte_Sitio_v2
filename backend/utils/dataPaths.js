@@ -45,6 +45,11 @@ function bootstrapDataFiles() {
       fs.writeFileSync(targetDiagnosticos, '[]', 'utf8');
     }
   }
+
+  const targetVcLog = path.join(dataDir, 'videoconferencia-log.json');
+  if (!fs.existsSync(targetVcLog)) {
+    fs.writeFileSync(targetVcLog, '[]', 'utf8');
+  }
 }
 
 module.exports = {

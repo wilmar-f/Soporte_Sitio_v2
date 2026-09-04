@@ -18,6 +18,7 @@ import {
 } from './diagnostico-logica.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
 import { renderPanelNoticias, esRolAdministrador } from './noticias.js';
+import { renderPanelEstadisticas } from './estadisticas.js';
 import { renderPanelUsuarios } from './admin-usuarios.js';
 
 const MAX_EVIDENCIAS = 4;
@@ -244,6 +245,7 @@ renderBanner();
 renderInfoUsuario();
 inventarioListo = cargarDatosIniciales();
 registrarEventosSidebar();
+abrirPanelDesdeQuery();
 
 /* ── Renderiza datos del usuario en el sidebar ─────── */
 function toTitleCase(str) {
@@ -308,6 +310,9 @@ function renderInfoUsuario() {
   const btnNoticias = document.getElementById('btn-noticias');
   setSidebarBtnVisible(btnNoticias, esAdministrador());
 
+  const btnEstadisticas = document.getElementById('btn-estadisticas');
+  setSidebarBtnVisible(btnEstadisticas, esAdministrador());
+
   const btnUsuarios = document.getElementById('btn-usuarios');
   setSidebarBtnVisible(btnUsuarios, esAdministrador());
 
@@ -371,6 +376,14 @@ function registrarEventosSidebar() {
     });
   }
 
+  const btnEstadisticas = document.getElementById('btn-estadisticas');
+  if (btnEstadisticas && esAdministrador()) {
+    btnEstadisticas.addEventListener('click', () => {
+      activarBotonSidebar('btn-estadisticas');
+      renderPanelEstadisticas(tokenGuardado);
+    });
+  }
+
   const btnUsuarios = document.getElementById('btn-usuarios');
   if (btnUsuarios && esAdministrador()) {
     btnUsuarios.addEventListener('click', () => {
@@ -396,6 +409,32 @@ function registrarEventosSidebar() {
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
 
   registrarModalCambiarContrasena();
+}
+
+function abrirPanelDesdeQuery() {
+  const panel = new URLSearchParams(window.location.search).get('panel');
+  if (!panel) return;
+
+  history.replaceState(null, '', window.location.pathname);
+
+  if (panel === 'noticias' && esAdministrador()) {
+    activarBotonSidebar('btn-noticias');
+    renderPanelNoticias(tokenGuardado);
+    return;
+  }
+  if (panel === 'estadisticas' && esAdministrador()) {
+    activarBotonSidebar('btn-estadisticas');
+    renderPanelEstadisticas(tokenGuardado);
+    return;
+  }
+  if (panel === 'usuarios' && esAdministrador()) {
+    activarBotonSidebar('btn-usuarios');
+    renderPanelUsuarios(tokenGuardado);
+    return;
+  }
+  if (panel === 'clave' && usuarioActual.loginType === 'admin') {
+    abrirModalCambiarContrasena();
+  }
 }
 
 function abrirModalCambiarContrasena() {
@@ -1277,6 +1316,7 @@ function recopilarValores() {
     cedulaTecnico:     get('cedula-tecnico'),
     cargoTecnico:      get('cargo-tecnico'),
     tipoDiagnostico:   get('diag-tipo'),
+    sedeCodigo:        SEDES_CODIGOS.find(s => s.sede === get('sede'))?.codigo || '',
     firmaBase64,
     // Campos del test de fabricante no capturados en este formulario
     testFabricanteRealizado: '',

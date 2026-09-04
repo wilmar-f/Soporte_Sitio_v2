@@ -12,6 +12,7 @@ const pdfRoutes = require('./routes/pdf');
 const diagnosticosRoutes = require('./routes/diagnosticos');
 const adminRoutes = require('./routes/admin');
 const videoconferenciaRoutes = require('./routes/videoconferencia');
+const estadisticasRoutes = require('./routes/estadisticas');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use('/api', pdfRoutes);
 app.use('/api', diagnosticosRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', videoconferenciaRoutes);
+app.use('/api', estadisticasRoutes);
 
 // Root redirect to login page
 app.get('/', (req, res) => {

@@ -23,6 +23,8 @@ exports.generarPdf = async (req, res) => {
         tipoDiagnostico: req.body.tipoDiagnostico ?? '',
         serial: datos.serial,
         etiqueta: datos.etiqueta,
+        sede: datos.sede ?? req.body.sede ?? '',
+        sedeCodigo: req.body.sedeCodigo ?? '',
       });
     } catch (storeErr) {
       console.error('Error guardando historial de diagnóstico:', storeErr.message);

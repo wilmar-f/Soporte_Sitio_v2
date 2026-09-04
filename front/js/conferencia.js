@@ -2,6 +2,7 @@ import { renderBanner } from './banner.js';
 import { toast } from './toast.js';
 import { logoutOffice365 } from './auth-office365.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
+import { esRolAdministrador } from './noticias.js';
 
 const loginType = sessionStorage.getItem('loginType') || 'admin';
 const tokenGuardado = sessionStorage.getItem('token');
@@ -79,6 +80,22 @@ function renderInfoUsuario() {
   } else {
     avatarEl.textContent = inicial;
   }
+
+  const esAdmin = esRolAdministrador(usuarioActual.rol);
+  setSidebarBtnVisible(document.getElementById('btn-noticias'), esAdmin);
+  setSidebarBtnVisible(document.getElementById('btn-estadisticas'), esAdmin);
+  setSidebarBtnVisible(document.getElementById('btn-usuarios'), esAdmin);
+  setSidebarBtnVisible(document.getElementById('btn-cambiar-contrasena'), loginType === 'admin');
+}
+
+function setSidebarBtnVisible(btn, visible) {
+  if (!btn) return;
+  btn.hidden = !visible;
+  btn.style.display = visible ? '' : 'none';
+}
+
+function irAPanelUsuario(panel) {
+  window.location.href = `/pages/usuario.html?panel=${encodeURIComponent(panel)}`;
 }
 
 function redimensionarImagen(file, maxSize = 1600) {
@@ -254,7 +271,13 @@ async function subirFoto(reemplazar = false) {
     const res = await fetch('/api/videoconferencia/upload', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ sede, sala, imagenBase64, reemplazar }),
+      body: JSON.stringify({
+        sede,
+        sala,
+        imagenBase64,
+        reemplazar,
+        nombreTecnico: usuarioActual.nombreCompleto || '',
+      }),
     });
     const data = await res.json().catch(() => ({}));
 
@@ -294,6 +317,10 @@ function registrarEventos() {
   document.getElementById('btn-diagnostico').addEventListener('click', () => {
     window.location.href = '/pages/usuario.html';
   });
+  document.getElementById('btn-noticias')?.addEventListener('click', () => irAPanelUsuario('noticias'));
+  document.getElementById('btn-estadisticas')?.addEventListener('click', () => irAPanelUsuario('estadisticas'));
+  document.getElementById('btn-usuarios')?.addEventListener('click', () => irAPanelUsuario('usuarios'));
+  document.getElementById('btn-cambiar-contrasena')?.addEventListener('click', () => irAPanelUsuario('clave'));
   document.getElementById('btn-piloto-pdp')?.addEventListener('click', () => {
     window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
   });
