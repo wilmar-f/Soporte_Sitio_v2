@@ -2,7 +2,8 @@
  * diagnostico-logica.js — Selección interactiva para los 3 campos de diagnóstico.
  * Genera texto estandarizado para el PDF (sin texto libre del técnico).
  *
- * Alcance actual: DIAGNOSTICO CON ACTIVOS, GESTOR GARANTIAS, RENOVACION y DAAS + DESKTOP/LAPTOP.
+ * Alcance: DIAGNOSTICO CON ACTIVOS, GESTOR GARANTIAS y RENOVACION (todos los activos);
+ * DAAS solo DESKTOP y LAPTOP.
  */
 
 /* ══════════════════════════════════════════════════════
@@ -18,16 +19,16 @@ export const TIPOS_DIAGNOSTICO = [
 
 export const TIPOS_ACTIVO = [
   { value: 'DESKTOP', label: 'DESKTOP', enabled: true },
+  { value: 'ESCANER', label: 'ESCANER', enabled: true },
+  { value: 'ESCANER_BALANZA', label: 'ESCANER BALANZA', enabled: true },
+  { value: 'IMPRESORA_LASER', label: 'IMPRESORA LASER', enabled: true },
+  { value: 'IMPRESORA_POS', label: 'IMPRESORA POS', enabled: true },
   { value: 'LAPTOP', label: 'LAPTOP', enabled: true },
-  // TODO: habilitar cuando se implementen otros activos
-  { value: 'SUREPOS', label: 'SUREPOS', enabled: false },
-  { value: 'LECTOR', label: 'LECTOR', enabled: false },
-  { value: 'IMPRESORA_LASER', label: 'IMPRESORA LASER', enabled: false },
-  { value: 'IMPRESORA_POS', label: 'IMPRESORA POS', enabled: false },
-  { value: 'ESCANER_BALANZA', label: 'ESCANER BALANZA', enabled: false },
-  { value: 'ESCANER', label: 'ESCANER', enabled: false },
-  { value: 'TABLET', label: 'TABLET', enabled: false },
-  { value: 'VERIFICADOR_PRECIOS', label: 'VERIFICADOR PRECIOS', enabled: false },
+  { value: 'LECTOR', label: 'LECTOR', enabled: true },
+  { value: 'PDA', label: 'PDA', enabled: true },
+  { value: 'SUREPOS', label: 'SUREPOS', enabled: true },
+  { value: 'TABLET', label: 'TABLET', enabled: true },
+  { value: 'VERIFICADOR_PRECIOS', label: 'VERIFICADOR PRECIOS', enabled: true },
 ];
 
 export const DAAS_TEXTOS = {
@@ -113,6 +114,7 @@ export const REPUESTOS_AVERIADOS = [
   'Teclado',
 ];
 
+const ACTIVOS_CON_FLUJO = TIPOS_ACTIVO.filter(t => t.enabled).map(t => t.value);
 const ACTIVOS_DAAS = ['DESKTOP', 'LAPTOP'];
 
 /* ══════════════════════════════════════════════════════
@@ -211,6 +213,32 @@ function activoDaasOk() {
   return ACTIVOS_DAAS.includes(tipoActivo);
 }
 
+function opcionesTipoActivo() {
+  if (esModoDaas()) {
+    return TIPOS_ACTIVO.filter(t => t.enabled && ACTIVOS_DAAS.includes(t.value));
+  }
+  return TIPOS_ACTIVO.filter(t => t.enabled);
+}
+
+function rellenarSelectActivo() {
+  const sel = document.getElementById('diag-activo');
+  if (!sel) return;
+
+  const items = opcionesTipoActivo();
+  const signature = items.map(t => t.value).join('|');
+  const prev = sel.value;
+  const keep = items.some(t => t.value === prev) ? prev : '';
+
+  if (sel.dataset.activos === signature) {
+    if (sel.value !== keep) sel.value = keep;
+    return;
+  }
+
+  sel.dataset.activos = signature;
+  sel.innerHTML = `<option value="">— Selecciona —</option>${renderSelectOptions(items)}`;
+  sel.value = keep;
+}
+
 function setPasoEnabled(el, enabled) {
   if (!el) return;
   el.classList.toggle('diagnostico-paso--deshabilitado', !enabled);
@@ -249,7 +277,7 @@ export function construirDescripcionFalla() {
   const detalleSw = document.getElementById('diag-falla-software')?.value;
 
   if (!esModoFlujoDesktop()) return '';
-  if (!ACTIVOS_DAAS.includes(tipoActivo)) return '';
+  if (!ACTIVOS_CON_FLUJO.includes(tipoActivo)) return '';
 
   let detalle = '';
   if (tipoFalla === 'HARDWARE') detalle = detalleHw;
@@ -516,6 +544,8 @@ function actualizarDaasDetallesPanel() {
 }
 
 function actualizarModoDiagnostico() {
+  rellenarSelectActivo();
+
   const tipoDiag = getTipoDiagnostico();
   const esDaas = tipoDiag === 'DAAS';
   const esFlujoDesktop = esModoFlujoDesktop();
@@ -528,7 +558,7 @@ function actualizarModoDiagnostico() {
   setPasoEnabled(paso2, activoHabilitado);
 
   const tipoActivo = document.getElementById('diag-activo')?.value;
-  const activoSeleccionado = activoHabilitado && ACTIVOS_DAAS.includes(tipoActivo);
+  const activoSeleccionado = activoHabilitado && opcionesTipoActivo().some(t => t.value === tipoActivo);
 
   if (esFlujoDesktop) {
     setPasoEnabled(paso3, activoSeleccionado);

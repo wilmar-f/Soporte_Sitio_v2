@@ -21,4 +21,14 @@ services:
         generateValue: true
       - key: DATA_DIR
         value: /var/data
+      - key: ONEDRIVE_CLIENT_ID
+        sync: false
+      - key: ONEDRIVE_CLIENT_SECRET
+        sync: false
+      - key: ONEDRIVE_TENANT
+        sync: false
+      - key: ONEDRIVE_FOLDER_URL
+        sync: false
+      - key: ONEDRIVE_REFRESH_TOKEN
+        sync: false
     healthCheckPath: /

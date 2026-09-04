@@ -1,0 +1,73 @@
+.sidebar__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.conferencia-ayuda {
+  color: var(--color-texto-suave);
+  font-size: 14px;
+  margin: -12px 0 20px;
+  line-height: 1.45;
+}
+
+.conferencia-estado {
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffecb5;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.conferencia-acciones {
+  margin-top: 8px;
+}
+
+.conferencia-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.webcam-panel {
+  margin: 12px 0 20px;
+  background: #111;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.webcam-panel video {
+  width: 100%;
+  max-height: 360px;
+  background: #000;
+  border-radius: 6px;
+  display: block;
+}
+
+.conferencia-preview {
+  margin: 16px 0;
+}
+
+.conferencia-preview-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.conferencia-preview img {
+  max-width: 100%;
+  max-height: 360px;
+  border: 1px solid var(--color-gris-borde);
+  border-radius: 8px;
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  .webcam-panel video,
+  .conferencia-preview img {
+    max-height: 240px;
+  }
+}

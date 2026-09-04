@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoConferencia — Diagnóstico</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="usuario.module.css">
+  <link rel="stylesheet" href="conferencia.module.css">
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+</head>
+<body>
+  <header id="banner"></header>
+  <div id="toast-container"></div>
+
+  <main class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__perfil">
+        <div class="sidebar__avatar" id="user-avatar" aria-hidden="true"></div>
+        <p class="sidebar__bienvenida">Bienvenido,</p>
+        <p class="sidebar__nombre" id="user-nombre">—</p>
+        <p class="sidebar__correo" id="user-correo">—</p>
+        <p class="sidebar__ultimo-acceso" id="user-ultimo-acceso"></p>
+        <span class="sidebar__rol" id="user-rol">—</span>
+      </div>
+
+      <nav class="sidebar__nav" aria-label="Menú principal">
+        <button class="sidebar__btn" id="btn-diagnostico">
+          <span class="sidebar__btn-icono">📋</span>
+          Diagnóstico
+        </button>
+        <button class="sidebar__btn sidebar__btn--activo" id="btn-videoconferencia">
+          <span class="sidebar__btn-icono">📷</span>
+          VideoConferencia
+        </button>
+        <button class="sidebar__btn sidebar__btn--peligro" id="btn-cerrar-sesion">
+          <span class="sidebar__btn-icono">🚪</span>
+          Cerrar Sesión
+        </button>
+      </nav>
+    </aside>
+
+    <section class="panel-principal">
+      <form class="formulario-diagnostico form-conferencia" id="form-conferencia" novalidate>
+        <h2>VideoConferencia</h2>
+        <p class="conferencia-ayuda">Selecciona sede y sala</p>
+        <p class="conferencia-estado" id="onedrive-estado" hidden></p>
+
+        <div class="campos-grid">
+          <div class="campo">
+            <label for="sede">Sede *</label>
+            <select id="sede" name="sede" required>
+              <option value="">Seleccione sede</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="sala">Sala videoconferencia *</label>
+            <select id="sala" name="sala" required disabled>
+              <option value="">Primero elija la sede</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="campo campo-full conferencia-acciones">
+          <input type="file" id="input-adjuntar" accept="image/*" hidden>
+          <input type="file" id="input-camara" accept="image/*" capture="environment" hidden>
+          <div class="conferencia-botones">
+            <button type="button" class="btn btn--outline" id="btn-adjuntar">Adjuntar imagen</button>
+            <button type="button" class="btn btn--outline" id="btn-camara">Tomar foto</button>
+            <button type="button" class="btn btn--outline" id="btn-webcam">Usar webcam</button>
+          </div>
+        </div>
+
+        <div class="webcam-panel" id="webcam-panel" hidden>
+          <video id="webcam-video" autoplay playsinline></video>
+          <div class="conferencia-botones">
+            <button type="button" class="btn btn--primario" id="btn-capturar">Capturar</button>
+            <button type="button" class="btn btn--outline" id="btn-cerrar-webcam">Cerrar cámara</button>
+          </div>
+        </div>
+
+        <div class="conferencia-preview" id="preview-wrap" hidden>
+          <p class="conferencia-preview-label">Vista previa</p>
+          <img id="preview-img" alt="Vista previa de la foto">
+        </div>
+
+        <div class="formulario-diagnostico__footer">
+          <button type="submit" class="btn btn--primario" id="btn-subir">Guardar foto</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div class="modal-clave" id="modal-reemplazar" hidden aria-hidden="true">
+    <div class="modal-clave__backdrop" id="modal-reemplazar-backdrop"></div>
+    <div class="modal-clave__dialog" role="dialog" aria-labelledby="modal-reemplazar-titulo" aria-modal="true">
+      <h2 class="modal-clave__titulo" id="modal-reemplazar-titulo">Ya existe una foto de hoy</h2>
+      <p class="modal-clave__subtitulo">Esta sede y sala ya tienen foto en la fecha de hoy. ¿Desea reemplazarla?</p>
+      <div class="modal-clave__acciones">
+        <button type="button" class="btn btn--outline" id="btn-reemplazar-cancelar">Cancelar</button>
+        <button type="button" class="btn btn--primario" id="btn-reemplazar-enviar">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Diagnóstico Web - Soporte en Sitio — Todos los derechos reservados</p>
+  </footer>
+
+  <script type="module" src="../js/conferencia.js"></script>
+</body>
+</html>

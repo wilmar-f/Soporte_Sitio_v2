@@ -197,6 +197,63 @@ npm run validate:inventario -- --no-file
 
 El script audita `inventario.xlsx` e informa etiquetas vacías, seriales duplicados, filas incompletas y advertencias de longitud distinta a 7 caracteres. En consola muestra un resumen y los primeros 20 seriales sin etiqueta; el detalle completo se exporta por defecto a `backend/data/reporte-validacion-inventario.csv` (columnas: Serial, Etiqueta, Fabricante, Modelo, Problema, Detalle). Usa `--no-file` si solo quieres la salida en terminal.
 
+### VideoConferencia (fotos de sala → OneDrive personal)
+
+Pantalla independiente (`/pages/conferencia.html`) para la foto diaria de cada sala. **No usa** el listado de sedes del diagnóstico: lee [`backend/data/videoconferencia.xlsx`](backend/data/videoconferencia.xlsx) (columnas `Sede` y `Sala de VideoConferencia`).
+
+El técnico elige sede y sala, toma o adjunta la foto, y el backend reenvía el archivo a OneDrive. Render **no guarda** la imagen en disco.
+
+Ruta en OneDrive (se crean las carpetas si faltan):
+
+```text
+{carpeta raíz}/
+  AKVIL/
+    2026/
+      09 Septiembre/
+        Sala de reuniones/
+          2026-09-02-AKVIL.jpg
+```
+
+Si ya hay foto ese día en esa sala, el aplicativo pregunta si se reemplaza.
+
+**Configurar OneDrive personal (una vez)**
+
+1. En [portal.azure.com](https://portal.azure.com) registra una app con **cuentas personales de Microsoft**.
+2. Redirect URI tipo Web: `http://localhost:3456/callback`.
+3. Permisos delegados Graph: `Files.ReadWrite` y `offline_access`.
+4. Crea un client secret si Azure lo exige.
+5. En el `.env` de la raíz del proyecto:
+
+```env
+ONEDRIVE_CLIENT_ID=...
+ONEDRIVE_CLIENT_SECRET=...
+ONEDRIVE_REFRESH_TOKEN=
+ONEDRIVE_FOLDER_URL=https://1drv.ms/f/c/0c59cf37384aef0f/IgCrWSFPPk0KSLAcyUD2L1hgAQD6nlNra4hyhQReqBSU9gI?e=LvBAzi
+ONEDRIVE_TENANT=consumers
+```
+
+6. Autoriza tu cuenta y copia el refresh token:
+
+```bash
+cd backend
+npm run onedrive:auth
+```
+
+7. **Render (producción).** El `.env` local no se sube. En [dashboard.render.com](https://dashboard.render.com) → servicio **diagnostico-web** → **Environment**, agrega las mismas claves (valores iguales a tu `.env` local):
+
+| Variable | Qué pegar |
+|----------|-----------|
+| `ONEDRIVE_CLIENT_ID` | Id. de aplicación de Entra |
+| `ONEDRIVE_CLIENT_SECRET` | Valor del secreto de cliente |
+| `ONEDRIVE_TENANT` | `consumers` |
+| `ONEDRIVE_FOLDER_URL` | Enlace `1drv.ms` de la carpeta |
+| `ONEDRIVE_REFRESH_TOKEN` | Token largo generado con `onedrive:auth` |
+
+No hace falta `ONEDRIVE_REDIRECT_URI` en Render ni volver a autorizar Hotmail: el refresh token de local sirve en el servidor. Tras guardar, Render reinicia el servicio. Prueba en la URL HTTPS de Render: login cédula → VideoConferencia → guardar foto.
+
+Si la API responde 503, falta alguna variable. Si el token expiró, corre `npm run onedrive:auth` en local y actualiza solo `ONEDRIVE_REFRESH_TOKEN` en Render. El Excel `backend/data/videoconferencia.xlsx` debe estar en el repositorio para el deploy.
+
+
 **Actualizar en local**
 
 1. Edita `backend/data/inventario.xlsx` en Excel (conserva los encabezados de la primera fila).

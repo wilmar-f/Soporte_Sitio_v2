@@ -379,6 +379,13 @@ function registrarEventosSidebar() {
     });
   }
 
+  const btnVideoconferencia = document.getElementById('btn-videoconferencia');
+  if (btnVideoconferencia) {
+    btnVideoconferencia.addEventListener('click', () => {
+      window.location.href = '/pages/conferencia.html';
+    });
+  }
+
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
 
   registrarModalCambiarContrasena();

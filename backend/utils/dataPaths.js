@@ -29,6 +29,13 @@ function bootstrapDataFiles() {
     console.log(`Bootstrap: inventario.xlsx copiado a ${targetInventario}`);
   }
 
+  const seedVideoconferencia = path.join(SEED_DATA_DIR, 'videoconferencia.xlsx');
+  const targetVideoconferencia = path.join(dataDir, 'videoconferencia.xlsx');
+  if (!fs.existsSync(targetVideoconferencia) && fs.existsSync(seedVideoconferencia)) {
+    fs.copyFileSync(seedVideoconferencia, targetVideoconferencia);
+    console.log(`Bootstrap: videoconferencia.xlsx copiado a ${targetVideoconferencia}`);
+  }
+
   const targetDiagnosticos = path.join(dataDir, 'diagnosticos.json');
   if (!fs.existsSync(targetDiagnosticos)) {
     const seedDiagnosticos = path.join(SEED_DATA_DIR, 'diagnosticos.json');
