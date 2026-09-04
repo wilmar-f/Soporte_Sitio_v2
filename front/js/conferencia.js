@@ -294,6 +294,9 @@ function registrarEventos() {
   document.getElementById('btn-diagnostico').addEventListener('click', () => {
     window.location.href = '/pages/usuario.html';
   });
+  document.getElementById('btn-piloto-pdp')?.addEventListener('click', () => {
+    window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
+  });
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
 
   document.getElementById('sede').addEventListener('change', e => {
@@ -310,7 +313,6 @@ function registrarEventos() {
       abrirWebcam();
     }
   });
-  document.getElementById('btn-webcam').addEventListener('click', abrirWebcam);
 
   document.getElementById('input-adjuntar').addEventListener('change', e => {
     procesarArchivo(e.target.files?.[0]);

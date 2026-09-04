@@ -386,6 +386,13 @@ function registrarEventosSidebar() {
     });
   }
 
+  const btnPilotoPdp = document.getElementById('btn-piloto-pdp');
+  if (btnPilotoPdp) {
+    btnPilotoPdp.addEventListener('click', () => {
+      window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
+    });
+  }
+
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
 
   registrarModalCambiarContrasena();
