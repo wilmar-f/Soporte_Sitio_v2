@@ -7,19 +7,33 @@ function getDataDir() {
   return process.env.DATA_DIR || SEED_DATA_DIR;
 }
 
-/** En producción el CRUD debe vivir en disco persistente (DATA_DIR). */
+/** Aviso si en producción no hay disco persistente (plan Free: el Excel es el de Git). */
 function assertProductionDataDir() {
   if (process.env.NODE_ENV !== 'production') return;
   const configured = String(process.env.DATA_DIR || '').trim();
   if (!configured) {
-    console.error(
-      'ERROR: En producción debe existir DATA_DIR (ej. /var/data). Sin disco persistente los usuarios creados se pierden al reiniciar.'
+    console.warn(
+      'Aviso: DATA_DIR no está definido. Se usa el tecnicos.xlsx del repositorio. Los cambios de técnicos aplican con commit + push.'
     );
-    process.exit(1);
   }
 }
 
-/** Copia seed al DATA_DIR si no existen archivos de datos (Render disco persistente). */
+function syncExcelFromRepo(filename, dataDir) {
+  const seed = path.join(SEED_DATA_DIR, filename);
+  const target = path.join(dataDir, filename);
+  if (!fs.existsSync(seed)) {
+    console.warn(`Bootstrap: no está ${filename} en el repositorio (${seed})`);
+    return;
+  }
+  if (path.resolve(seed) === path.resolve(target)) {
+    console.log(`Bootstrap: ${filename} se lee del repositorio (${target})`);
+    return;
+  }
+  fs.copyFileSync(seed, target);
+  console.log(`Bootstrap: ${filename} actualizado desde el repositorio → ${target}`);
+}
+
+/** Copia catálogos Excel del repo a DATA_DIR y crea JSON de historial si faltan. */
 function bootstrapDataFiles() {
   assertProductionDataDir();
 
@@ -29,30 +43,11 @@ function bootstrapDataFiles() {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  const seedTecnicos = path.join(SEED_DATA_DIR, 'tecnicos.xlsx');
-  const targetTecnicos = path.join(dataDir, 'tecnicos.xlsx');
-  const tecnicosExiste = fs.existsSync(targetTecnicos);
-  console.log(`Datos: DATA_DIR=${dataDir} tecnicos.xlsx=${targetTecnicos}`);
-  if (!tecnicosExiste && fs.existsSync(seedTecnicos)) {
-    fs.copyFileSync(seedTecnicos, targetTecnicos);
-    console.log(`Bootstrap: tecnicos.xlsx copiado desde el repositorio (el disco no tenía archivo) → ${targetTecnicos}`);
-  } else if (tecnicosExiste) {
-    console.log('Bootstrap: tecnicos.xlsx del disco se conserva (no se pisa con Git).');
-  }
-
-  const seedInventario = path.join(SEED_DATA_DIR, 'inventario.xlsx');
-  const targetInventario = path.join(dataDir, 'inventario.xlsx');
-  if (fs.existsSync(seedInventario) && path.resolve(seedInventario) !== path.resolve(targetInventario)) {
-    fs.copyFileSync(seedInventario, targetInventario);
-    console.log(`Bootstrap: inventario.xlsx actualizado desde el repositorio → ${targetInventario}`);
-  }
-
-  const seedVideoconferencia = path.join(SEED_DATA_DIR, 'videoconferencia.xlsx');
-  const targetVideoconferencia = path.join(dataDir, 'videoconferencia.xlsx');
-  if (!fs.existsSync(targetVideoconferencia) && fs.existsSync(seedVideoconferencia)) {
-    fs.copyFileSync(seedVideoconferencia, targetVideoconferencia);
-    console.log(`Bootstrap: videoconferencia.xlsx copiado a ${targetVideoconferencia}`);
-  }
+  console.log(`Datos: DATA_DIR=${dataDir}`);
+  syncExcelFromRepo('tecnicos.xlsx', dataDir);
+  syncExcelFromRepo('inventario.xlsx', dataDir);
+  syncExcelFromRepo('usuarios.xlsx', dataDir);
+  syncExcelFromRepo('videoconferencia.xlsx', dataDir);
 
   const targetDiagnosticos = path.join(dataDir, 'diagnosticos.json');
   if (!fs.existsSync(targetDiagnosticos)) {

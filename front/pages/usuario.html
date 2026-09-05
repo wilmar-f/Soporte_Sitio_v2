@@ -98,48 +98,6 @@
     </div>
   </div>
 
-  <div class="modal-clave" id="modal-usuario" hidden aria-hidden="true">
-    <div class="modal-clave__backdrop" id="modal-usuario-backdrop"></div>
-    <div class="modal-clave__dialog" role="dialog" aria-labelledby="modal-usuario-titulo" aria-modal="true">
-      <h2 class="modal-clave__titulo" id="modal-usuario-titulo">Usuario</h2>
-      <p class="modal-clave__subtitulo" id="modal-usuario-subtitulo"></p>
-      <form id="form-usuario" class="modal-clave__form" novalidate>
-        <div class="campo">
-          <label for="usuario-cedula">Cédula / identidad</label>
-          <input type="text" id="usuario-cedula" name="cedula" inputmode="numeric" autocomplete="off" required>
-        </div>
-        <div class="campo">
-          <label for="usuario-nombre">Nombre</label>
-          <input type="text" id="usuario-nombre" name="nombreCompleto" autocomplete="name" required>
-        </div>
-        <div class="campo">
-          <label for="usuario-cargo">Cargo</label>
-          <input type="text" id="usuario-cargo" name="cargo" autocomplete="organization-title">
-        </div>
-        <div class="campo">
-          <label for="usuario-rol">Rol</label>
-          <select id="usuario-rol" name="rol">
-            <option value="tecnico">Técnico</option>
-            <option value="administrador">Administrador</option>
-          </select>
-        </div>
-        <div class="campo">
-          <label for="usuario-clave" id="usuario-clave-label">Contraseña temporal</label>
-          <input type="password" id="usuario-clave" name="contrasenaNueva" autocomplete="new-password" minlength="6">
-          <p class="modal-clave__ayuda" id="usuario-clave-ayuda">Mínimo 6 caracteres, con mayúscula, número y un carácter . * + -</p>
-        </div>
-        <div class="campo">
-          <label for="usuario-clave-confirmar">Confirmar contraseña</label>
-          <input type="password" id="usuario-clave-confirmar" name="contrasenaConfirmacion" autocomplete="new-password" minlength="6">
-        </div>
-        <div class="modal-clave__acciones">
-          <button type="button" class="btn btn--outline" id="btn-usuario-cancelar">Cancelar</button>
-          <button type="submit" class="btn btn--primario" id="btn-usuario-guardar">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <footer>
     <p>&copy; 2026 Sistema de Diagnóstico Web - Soporte en Sitio — Todos los derechos reservados</p>
   </footer>
