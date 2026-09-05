@@ -721,8 +721,8 @@ function renderFormularioDiagnostico() {
             <label for="cargo-tecnico">Cargo técnico *</label>
             <input type="text" id="cargo-tecnico" name="cargoTecnico" placeholder="Ej: Técnico de Soporte" required>
           </div>
-          <div class="campo campo-full">
-            <label>Firma <small style="font-weight:400;text-transform:none;">(opcional — dibuja con mouse/dedo <strong>o</strong> carga una imagen)</small></label>
+          <div class="campo campo-full" id="firma-bloque">
+            <label>Firma * <small style="font-weight:400;text-transform:none;">(dibuja con mouse/dedo <strong>o</strong> carga una imagen)</small></label>
             <div class="firma-tabs">
               <button type="button" class="firma-tab firma-tab--activo" id="tab-dibujar">Dibujar firma</button>
               <button type="button" class="firma-tab" id="tab-cargar">Cargar imagen</button>
@@ -1137,7 +1137,14 @@ async function validarFormulario() {
     valido = false;
   }
 
-  if (!valido) {
+  if (!obtenerFirmaBase64()) {
+    const bloqueFirma = document.getElementById('firma-bloque');
+    if (bloqueFirma) bloqueFirma.classList.add('invalido');
+    toast('La firma es obligatoria: dibújala o carga una imagen.', 'error');
+    valido = false;
+  }
+
+  if (!valido && errores.length > 0) {
     toast(
       `Completa los campos obligatorios: ${errores.slice(0, 3).join(', ')}${errores.length > 3 ? '…' : ''}.`,
       'error'
@@ -1149,31 +1156,31 @@ async function validarFormulario() {
 /* ══════════════════════════════════════════════════════
    10. RECOPILAR VALORES DEL FORMULARIO
    ══════════════════════════════════════════════════════ */
+function obtenerFirmaBase64() {
+  const canvas = document.getElementById('firma-canvas');
+  if (canvas) {
+    const panelDibujar = document.getElementById('panel-dibujar');
+    const esPanelDibujar = panelDibujar && panelDibujar.style.display !== 'none';
+    if (esPanelDibujar) {
+      const pixeles = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      const tieneTrazo = pixeles.some((v, i) => i % 4 === 3 && v > 0);
+      if (tieneTrazo) return canvas.toDataURL('image/png');
+    }
+  }
+  const firmaPreview = document.getElementById('firma-preview');
+  if (firmaPreview && firmaPreview.classList.contains('visible') && firmaPreview.src) {
+    return firmaPreview.src;
+  }
+  return '';
+}
+
 function recopilarValores() {
   const get = (id) => {
     const el = document.getElementById(id);
     return el ? el.value.trim() : '';
   };
 
-  // Obtener firma: primero revisa si el canvas tiene trazos, luego la imagen cargada
-  let firmaBase64 = '';
-  const canvas = document.getElementById('firma-canvas');
-  if (canvas) {
-    const panelDibujar = document.getElementById('panel-dibujar');
-    const esPanelDibujar = panelDibujar && panelDibujar.style.display !== 'none';
-    if (esPanelDibujar) {
-      // Verificar si el canvas tiene algo dibujado
-      const pixeles = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-      const tieneTrazo = pixeles.some((v, i) => i % 4 === 3 && v > 0);
-      if (tieneTrazo) firmaBase64 = canvas.toDataURL('image/png');
-    }
-  }
-  if (!firmaBase64) {
-    const firmaPreview = document.getElementById('firma-preview');
-    if (firmaPreview && firmaPreview.classList.contains('visible')) {
-      firmaBase64 = firmaPreview.src;
-    }
-  }
+  const firmaBase64 = obtenerFirmaBase64();
 
   return {
     sede:              get('sede'),

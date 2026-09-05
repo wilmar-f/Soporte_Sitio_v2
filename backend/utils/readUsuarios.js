@@ -47,7 +47,7 @@ function mapRow(rawRow) {
   return { cedula, nombreUsuario };
 }
 
-function reloadUsuarios() {
+function loadUsuariosRows() {
   const filePath = getUsuariosPath();
   if (!fs.existsSync(filePath)) {
     throw new Error(`No se encontró el archivo de usuarios: ${filePath}`);
@@ -57,12 +57,15 @@ function reloadUsuarios() {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-  return rows
-    .map(mapRow)
-    .filter(row => row.cedula);
+  return rows.map(mapRow);
+}
+
+function reloadUsuarios() {
+  return loadUsuariosRows().filter(row => row.cedula);
 }
 
 module.exports = {
+  loadUsuariosRows,
   reloadUsuarios,
   getUsuariosPath,
 };

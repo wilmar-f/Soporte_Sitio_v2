@@ -7,5 +7,6 @@ Thumbs.db
 # Documentación e informes locales (no requeridos por la app)
 docs/
 
-# Reporte local de validación de inventario
+# Reportes locales de validación
 backend/data/reporte-validacion-inventario.csv
+backend/data/reporte-validacion-usuarios.csv

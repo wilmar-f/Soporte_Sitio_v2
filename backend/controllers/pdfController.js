@@ -13,6 +13,10 @@ exports.generarPdf = async (req, res) => {
       ? req.body.evidencias.filter(src => typeof src === 'string' && src.startsWith('data:'))
       : [];
 
+    if (typeof datos.firmaBase64 !== 'string' || !datos.firmaBase64.startsWith('data:')) {
+      return res.status(400).json({ error: 'La firma es obligatoria. Dibújala o carga una imagen.' });
+    }
+
     const pdfBuffer = await generarPdfDiagnostico(datos);
 
     try {

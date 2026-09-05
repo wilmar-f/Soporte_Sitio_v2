@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "validate:inventario": "node scripts/validate-inventario.js",
+    "validate:usuarios": "node scripts/validate-usuarios.js",
     "onedrive:auth": "node scripts/onedrive-auth.js",
     "generate:informe": "node scripts/generar-informe-pdf.js"
   },
