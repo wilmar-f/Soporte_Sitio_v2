@@ -118,6 +118,97 @@ function findHeaderColumns(sheet) {
   return { range, cedulaCol, passCol };
 }
 
+function throwCoded(code, message) {
+  const err = new Error(message);
+  err.code = code;
+  throw err;
+}
+
+function throwWriteError(writeErr, message) {
+  const err = new Error(message);
+  err.code = 'WRITE_ERROR';
+  err.cause = writeErr;
+  throw err;
+}
+
+function rolExcel(rol) {
+  return normalizeRol(rol) === 'administrador' ? 'Administrador' : 'Tecnico';
+}
+
+function loadSheetAoa() {
+  const { workbook, sheetName, tecnicosPath } = readWorkbook();
+  const sheet = workbook.Sheets[sheetName];
+  const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+  return { workbook, sheetName, tecnicosPath, aoa };
+}
+
+function headerIndex(headerRow) {
+  const idx = { cedula: -1, pass: -1, nombre: -1, cargo: -1, rol: -1 };
+  (headerRow || []).forEach((h, i) => {
+    if (headerMatches(h, HEADER_MAP.cedula)) idx.cedula = i;
+    if (headerMatches(h, HEADER_MAP.contraseña)) idx.pass = i;
+    if (headerMatches(h, HEADER_MAP.nombreCompleto)) idx.nombre = i;
+    if (headerMatches(h, HEADER_MAP.cargo)) idx.cargo = i;
+    if (headerMatches(h, HEADER_MAP.rol)) idx.rol = i;
+  });
+  return idx;
+}
+
+function ensureHeaders(aoa) {
+  if (!aoa.length) {
+    aoa.push(['Cédula', 'Contraseña', 'Nombre', 'Cargo', 'Rol']);
+  }
+  const idx = headerIndex(aoa[0]);
+  if (idx.cedula < 0 || idx.pass < 0) {
+    throwCoded('WRITE_ERROR', 'El Excel de técnicos no tiene columnas Cédula y Contraseña');
+  }
+
+  const addCol = (key, label) => {
+    if (idx[key] >= 0) return;
+    aoa[0].push(label);
+    idx[key] = aoa[0].length - 1;
+    for (let r = 1; r < aoa.length; r++) {
+      const row = aoa[r] || [];
+      while (row.length <= idx[key]) row.push('');
+      aoa[r] = row;
+    }
+  };
+
+  addCol('nombre', 'Nombre');
+  addCol('cargo', 'Cargo');
+  addCol('rol', 'Rol');
+  return idx;
+}
+
+function findRowIndex(aoa, idx, cedula) {
+  for (let r = 1; r < aoa.length; r++) {
+    if (normalizeCedula(aoa[r]?.[idx.cedula]) === cedula) return r;
+  }
+  return -1;
+}
+
+function countAdmins(aoa, idx, exceptCedula) {
+  let n = 0;
+  for (let r = 1; r < aoa.length; r++) {
+    const ced = normalizeCedula(aoa[r]?.[idx.cedula]);
+    if (!ced || (exceptCedula && ced === exceptCedula)) continue;
+    if (normalizeRol(aoa[r]?.[idx.rol]) === 'administrador') n++;
+  }
+  return n;
+}
+
+function persistAoa(workbook, sheetName, tecnicosPath, aoa) {
+  workbook.Sheets[sheetName] = XLSX.utils.aoa_to_sheet(aoa);
+  writeWorkbookAtomic(workbook, tecnicosPath);
+  reloadTecnicos();
+}
+
+function padRow(row, length) {
+  const next = Array.isArray(row) ? [...row] : [];
+  while (next.length < length) next.push('');
+  return next;
+}
+
 function writeWorkbookAtomic(workbook, filePath) {
   const buf = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   const tmpPath = `${filePath}.tmp`;
@@ -292,6 +383,119 @@ function adminResetContrasena(cedulaInput, contrasenaNueva) {
   return { ok: true };
 }
 
+function crearTecnico({ cedula, nombreCompleto, cargo, rol, contrasena }) {
+  const ced = normalizeCedula(cedula);
+  const nombre = String(nombreCompleto ?? '').trim();
+  const cargoVal = String(cargo ?? '').trim();
+  const rolVal = normalizeRol(rol);
+  const pass = String(contrasena ?? '');
+
+  if (!ced || !nombre || !pass) {
+    throwCoded('VALIDATION', 'Cédula, nombre y contraseña son requeridos');
+  }
+
+  const { workbook, sheetName, tecnicosPath, aoa } = loadSheetAoa();
+  const idx = ensureHeaders(aoa);
+
+  if (findRowIndex(aoa, idx, ced) >= 0) {
+    throwCoded('DUPLICATE', 'Ya existe un usuario con esa cédula');
+  }
+
+  const row = padRow([], Math.max(aoa[0].length, idx.rol + 1));
+  row[idx.cedula] = ced;
+  row[idx.pass] = pass;
+  row[idx.nombre] = nombre;
+  row[idx.cargo] = cargoVal;
+  row[idx.rol] = rolExcel(rolVal);
+  aoa.push(row);
+
+  try {
+    persistAoa(workbook, sheetName, tecnicosPath, aoa);
+  } catch (writeErr) {
+    if (writeErr.code === 'WRITE_ERROR') throw writeErr;
+    throwWriteError(writeErr, 'No se pudo guardar el usuario');
+  }
+
+  return { cedula: ced, nombreCompleto: nombre, cargo: cargoVal, rol: rolVal };
+}
+
+function actualizarTecnico(cedulaActual, { cedula, nombreCompleto, cargo, rol, contrasena }) {
+  const actual = normalizeCedula(cedulaActual);
+  if (!actual) throwCoded('USER_NOT_FOUND', 'Usuario no encontrado');
+
+  const nuevaCedula = normalizeCedula(cedula);
+  const nombre = String(nombreCompleto ?? '').trim();
+  const cargoVal = String(cargo ?? '').trim();
+  const rolVal = normalizeRol(rol);
+  const pass = String(contrasena ?? '').trim();
+
+  if (!nuevaCedula || !nombre) {
+    throwCoded('VALIDATION', 'Cédula y nombre son requeridos');
+  }
+
+  const { workbook, sheetName, tecnicosPath, aoa } = loadSheetAoa();
+  const idx = ensureHeaders(aoa);
+  const rowIndex = findRowIndex(aoa, idx, actual);
+  if (rowIndex < 0) throwCoded('USER_NOT_FOUND', 'Usuario no encontrado');
+
+  if (nuevaCedula !== actual && findRowIndex(aoa, idx, nuevaCedula) >= 0) {
+    throwCoded('DUPLICATE', 'Ya existe un usuario con esa cédula');
+  }
+
+  const eraAdmin = normalizeRol(aoa[rowIndex][idx.rol]) === 'administrador';
+  if (eraAdmin && rolVal !== 'administrador' && countAdmins(aoa, idx, actual) === 0) {
+    throwCoded('LAST_ADMIN', 'No se puede quitar el rol al último administrador');
+  }
+
+  const row = padRow(aoa[rowIndex], aoa[0].length);
+  row[idx.cedula] = nuevaCedula;
+  row[idx.nombre] = nombre;
+  row[idx.cargo] = cargoVal;
+  row[idx.rol] = rolExcel(rolVal);
+  if (pass) row[idx.pass] = pass;
+  aoa[rowIndex] = row;
+
+  try {
+    persistAoa(workbook, sheetName, tecnicosPath, aoa);
+  } catch (writeErr) {
+    if (writeErr.code === 'WRITE_ERROR') throw writeErr;
+    throwWriteError(writeErr, 'No se pudo actualizar el usuario');
+  }
+
+  return {
+    cedula: nuevaCedula,
+    nombreCompleto: nombre,
+    cargo: cargoVal,
+    rol: rolVal,
+    contrasenaActualizada: Boolean(pass),
+  };
+}
+
+function eliminarTecnico(cedulaInput) {
+  const ced = normalizeCedula(cedulaInput);
+  if (!ced) throwCoded('USER_NOT_FOUND', 'Usuario no encontrado');
+
+  const { workbook, sheetName, tecnicosPath, aoa } = loadSheetAoa();
+  const idx = ensureHeaders(aoa);
+  const rowIndex = findRowIndex(aoa, idx, ced);
+  if (rowIndex < 0) throwCoded('USER_NOT_FOUND', 'Usuario no encontrado');
+
+  if (normalizeRol(aoa[rowIndex][idx.rol]) === 'administrador' && countAdmins(aoa, idx, ced) === 0) {
+    throwCoded('LAST_ADMIN', 'No se puede eliminar al último administrador');
+  }
+
+  aoa.splice(rowIndex, 1);
+
+  try {
+    persistAoa(workbook, sheetName, tecnicosPath, aoa);
+  } catch (writeErr) {
+    if (writeErr.code === 'WRITE_ERROR') throw writeErr;
+    throwWriteError(writeErr, 'No se pudo eliminar el usuario');
+  }
+
+  return { ok: true };
+}
+
 module.exports = {
   getTecnicos,
   reloadTecnicos,
@@ -299,6 +503,9 @@ module.exports = {
   updateContrasena,
   listTecnicosSeguro,
   adminResetContrasena,
+  crearTecnico,
+  actualizarTecnico,
+  eliminarTecnico,
   normalizeCedula,
   normalizeRol,
   getTecnicosPath,

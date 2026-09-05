@@ -423,6 +423,8 @@
   z-index: 1;
   width: 100%;
   max-width: 420px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   background: var(--color-blanco, #fff);
   border-radius: var(--border-radius, 8px);
   padding: 24px;
@@ -448,6 +450,24 @@
 
 .admin-usuarios-panel .noticias-table td:last-child {
   white-space: nowrap;
+}
+.admin-usuarios-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.admin-usuarios-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.modal-clave__dialog select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-borde, #c8d4e8);
+  border-radius: 6px;
+  font-size: 14px;
 }
 
 .modal-clave__form .campo {

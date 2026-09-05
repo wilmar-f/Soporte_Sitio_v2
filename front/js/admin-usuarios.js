@@ -1,6 +1,5 @@
 /**
- * admin-usuarios.js — Panel de gestión de usuarios (solo administrador).
- * Permite buscar técnicos y restablecer contraseñas olvidadas.
+ * admin-usuarios.js — CRUD de técnicos (solo administrador).
  */
 import { toast } from './toast.js';
 
@@ -11,8 +10,8 @@ const PASSWORD_COMPLEXITY_MSG =
 let state = {
   q: '',
   token: '',
-  resetCedula: '',
-  resetNombre: '',
+  mode: 'create',
+  cedulaOriginal: '',
 };
 
 function esc(str) {
@@ -24,9 +23,7 @@ function esc(str) {
 }
 
 function labelRol(rol) {
-  const r = String(rol ?? '').toLowerCase();
-  if (r === 'administrador') return 'Administrador';
-  return 'Técnico';
+  return String(rol ?? '').toLowerCase() === 'administrador' ? 'Administrador' : 'Técnico';
 }
 
 function validarComplejidadContrasena(contrasena) {
@@ -34,11 +31,15 @@ function validarComplejidadContrasena(contrasena) {
   if (pwd.length < MIN_PASSWORD_LENGTH) {
     return { ok: false, error: PASSWORD_COMPLEXITY_MSG };
   }
-  const valid =
-    /[A-Z]/.test(pwd) &&
-    /[0-9]/.test(pwd) &&
-    /[.*+\-]/.test(pwd);
+  const valid = /[A-Z]/.test(pwd) && /[0-9]/.test(pwd) && /[.*+\-]/.test(pwd);
   return valid ? { ok: true } : { ok: false, error: PASSWORD_COMPLEXITY_MSG };
+}
+
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${state.token}`,
+  };
 }
 
 function renderRows(tecnicos) {
@@ -52,11 +53,18 @@ function renderRows(tecnicos) {
       <td>${esc(t.nombreCompleto)}</td>
       <td>${esc(t.cargo || '—')}</td>
       <td>${esc(labelRol(t.rol))}</td>
-      <td>
-        <button type="button" class="btn btn--outline btn--sm admin-usuarios-btn-reset"
+      <td class="admin-usuarios-acciones">
+        <button type="button" class="btn btn--outline btn--sm admin-usuarios-btn-editar"
+          data-cedula="${esc(t.cedula)}"
+          data-nombre="${esc(t.nombreCompleto)}"
+          data-cargo="${esc(t.cargo || '')}"
+          data-rol="${esc(t.rol || 'tecnico')}">
+          Editar
+        </button>
+        <button type="button" class="btn btn--outline btn--sm admin-usuarios-btn-eliminar"
           data-cedula="${esc(t.cedula)}"
           data-nombre="${esc(t.nombreCompleto)}">
-          Restablecer
+          Eliminar
         </button>
       </td>
     </tr>
@@ -77,16 +85,13 @@ async function loadAndRender() {
     const res = await fetch(`/api/admin/tecnicos?${params}`, {
       headers: { Authorization: `Bearer ${state.token}` },
     });
-
     const data = await res.json().catch(() => ({}));
-
     if (!res.ok) {
       throw new Error(data.error || 'No se pudo cargar la lista de usuarios');
     }
 
     const tecnicos = data.tecnicos || [];
     tbody.innerHTML = renderRows(tecnicos);
-
     if (meta) {
       meta.textContent = tecnicos.length
         ? `${tecnicos.length} usuario${tecnicos.length === 1 ? '' : 's'} mostrado${tecnicos.length === 1 ? '' : 's'}`
@@ -100,93 +105,155 @@ async function loadAndRender() {
   }
 }
 
-function abrirModalReset(cedula, nombre) {
-  state.resetCedula = cedula;
-  state.resetNombre = nombre;
+function abrirModalCrear() {
+  state.mode = 'create';
+  state.cedulaOriginal = '';
 
-  const modal = document.getElementById('modal-reset-contrasena');
-  const subtitulo = document.getElementById('modal-reset-subtitulo');
-  const form = document.getElementById('form-reset-contrasena');
+  document.getElementById('modal-usuario-titulo').textContent = 'Nuevo usuario';
+  document.getElementById('modal-usuario-subtitulo').textContent = 'La contraseña temporal es obligatoria.';
+  document.getElementById('usuario-clave-label').textContent = 'Contraseña temporal';
+  document.getElementById('usuario-clave-ayuda').textContent =
+    'Obligatoria. Mínimo 6 caracteres, con mayúscula, número y un carácter . * + -';
 
-  if (subtitulo) {
-    subtitulo.textContent = `${nombre} (cédula ${cedula})`;
-  }
+  const form = document.getElementById('form-usuario');
   form?.reset();
-  if (modal) {
-    modal.hidden = false;
-    modal.setAttribute('aria-hidden', 'false');
-  }
-  document.getElementById('reset-clave-nueva')?.focus();
+  document.getElementById('usuario-rol').value = 'tecnico';
+  document.getElementById('usuario-clave').required = true;
+  document.getElementById('usuario-clave-confirmar').required = true;
+
+  mostrarModal();
+  document.getElementById('usuario-cedula')?.focus();
 }
 
-function cerrarModalReset() {
-  const modal = document.getElementById('modal-reset-contrasena');
+function abrirModalEditar(user) {
+  state.mode = 'edit';
+  state.cedulaOriginal = user.cedula;
+
+  document.getElementById('modal-usuario-titulo').textContent = 'Editar usuario';
+  document.getElementById('modal-usuario-subtitulo').textContent =
+    `${user.nombre} (cédula ${user.cedula}). Deje la contraseña vacía si no desea restablecerla.`;
+  document.getElementById('usuario-clave-label').textContent = 'Nueva contraseña (opcional)';
+  document.getElementById('usuario-clave-ayuda').textContent =
+    'Solo si desea restablecerla. Mínimo 6 caracteres, con mayúscula, número y un carácter . * + -';
+
+  const form = document.getElementById('form-usuario');
+  form?.reset();
+  document.getElementById('usuario-cedula').value = user.cedula;
+  document.getElementById('usuario-nombre').value = user.nombre;
+  document.getElementById('usuario-cargo').value = user.cargo || '';
+  document.getElementById('usuario-rol').value = user.rol === 'administrador' ? 'administrador' : 'tecnico';
+  document.getElementById('usuario-clave').required = false;
+  document.getElementById('usuario-clave-confirmar').required = false;
+
+  mostrarModal();
+  document.getElementById('usuario-nombre')?.focus();
+}
+
+function mostrarModal() {
+  const modal = document.getElementById('modal-usuario');
+  if (!modal) return;
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalUsuario() {
+  const modal = document.getElementById('modal-usuario');
   if (modal) {
     modal.hidden = true;
     modal.setAttribute('aria-hidden', 'true');
   }
-  document.getElementById('form-reset-contrasena')?.reset();
-  state.resetCedula = '';
-  state.resetNombre = '';
+  document.getElementById('form-usuario')?.reset();
+  state.mode = 'create';
+  state.cedulaOriginal = '';
 }
 
-async function enviarReset(e) {
+async function enviarUsuario(e) {
   e.preventDefault();
 
-  const contrasenaNueva = document.getElementById('reset-clave-nueva')?.value || '';
-  const contrasenaConfirmacion = document.getElementById('reset-clave-confirmar')?.value || '';
+  const cedula = document.getElementById('usuario-cedula')?.value.trim() || '';
+  const nombreCompleto = document.getElementById('usuario-nombre')?.value.trim() || '';
+  const cargo = document.getElementById('usuario-cargo')?.value.trim() || '';
+  const rol = document.getElementById('usuario-rol')?.value || 'tecnico';
+  const contrasenaNueva = document.getElementById('usuario-clave')?.value || '';
+  const contrasenaConfirmacion = document.getElementById('usuario-clave-confirmar')?.value || '';
 
-  if (contrasenaNueva !== contrasenaConfirmacion) {
-    toast('La nueva contraseña y la confirmación no coinciden.', 'advertencia');
+  if (!cedula || !nombreCompleto) {
+    toast('Cédula y nombre son requeridos.', 'advertencia');
     return;
   }
 
-  const complejidad = validarComplejidadContrasena(contrasenaNueva);
-  if (!complejidad.ok) {
-    toast(complejidad.error, 'advertencia');
-    return;
+  const claveRequerida = state.mode === 'create';
+  if (claveRequerida || contrasenaNueva || contrasenaConfirmacion) {
+    if (contrasenaNueva !== contrasenaConfirmacion) {
+      toast('La nueva contraseña y la confirmación no coinciden.', 'advertencia');
+      return;
+    }
+    const complejidad = validarComplejidadContrasena(contrasenaNueva);
+    if (!complejidad.ok) {
+      toast(complejidad.error, 'advertencia');
+      return;
+    }
   }
 
-  const btnGuardar = document.getElementById('btn-reset-guardar');
+  const btnGuardar = document.getElementById('btn-usuario-guardar');
   if (btnGuardar) {
     btnGuardar.disabled = true;
     btnGuardar.textContent = 'Guardando…';
   }
 
+  const payload = { cedula, nombreCompleto, cargo, rol };
+  if (contrasenaNueva) {
+    payload.contrasenaNueva = contrasenaNueva;
+    payload.contrasenaConfirmacion = contrasenaConfirmacion;
+  }
+
   try {
-    const res = await fetch('/api/admin/reset-contrasena', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${state.token}`,
-      },
-      body: JSON.stringify({
-        cedula: state.resetCedula,
-        contrasenaNueva,
-        contrasenaConfirmacion,
-      }),
+    const url = state.mode === 'create'
+      ? '/api/admin/tecnicos'
+      : `/api/admin/tecnicos/${encodeURIComponent(state.cedulaOriginal)}`;
+    const res = await fetch(url, {
+      method: state.mode === 'create' ? 'POST' : 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
     });
-
     const data = await res.json().catch(() => ({}));
-
     if (!res.ok) {
-      toast(data.error || 'No se pudo restablecer la contraseña.', 'error');
+      toast(data.error || 'No se pudo guardar el usuario.', 'error');
       return;
     }
-
-    toast(
-      data.mensaje || 'Contraseña restablecida. Comuníquela al técnico por un canal seguro.',
-      'exito'
-    );
-    cerrarModalReset();
+    toast(data.mensaje || 'Usuario guardado.', 'exito');
+    cerrarModalUsuario();
+    await loadAndRender();
   } catch (err) {
-    console.error('Error restableciendo contraseña:', err);
-    toast('Error de conexión al restablecer la contraseña.', 'error');
+    console.error('Error guardando usuario:', err);
+    toast('Error de conexión al guardar el usuario.', 'error');
   } finally {
     if (btnGuardar) {
       btnGuardar.disabled = false;
-      btnGuardar.textContent = 'Restablecer';
+      btnGuardar.textContent = 'Guardar';
     }
+  }
+}
+
+async function eliminarUsuario(cedula, nombre) {
+  const ok = window.confirm(`¿Eliminar a ${nombre} (cédula ${cedula})? Esta acción no se puede deshacer.`);
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`/api/admin/tecnicos/${encodeURIComponent(cedula)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${state.token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(data.error || 'No se pudo eliminar el usuario.', 'error');
+      return;
+    }
+    toast(data.mensaje || 'Usuario eliminado.', 'exito');
+    await loadAndRender();
+  } catch (err) {
+    console.error('Error eliminando usuario:', err);
+    toast('Error de conexión al eliminar el usuario.', 'error');
   }
 }
 
@@ -206,42 +273,57 @@ function bindPanelEvents() {
   });
 
   panel.addEventListener('click', (e) => {
-    const btn = e.target.closest('.admin-usuarios-btn-reset');
-    if (!btn) return;
-    abrirModalReset(btn.dataset.cedula, btn.dataset.nombre);
+    if (e.target.closest('#btn-usuario-nuevo')) {
+      abrirModalCrear();
+      return;
+    }
+    const editar = e.target.closest('.admin-usuarios-btn-editar');
+    if (editar) {
+      abrirModalEditar({
+        cedula: editar.dataset.cedula,
+        nombre: editar.dataset.nombre,
+        cargo: editar.dataset.cargo,
+        rol: editar.dataset.rol,
+      });
+      return;
+    }
+    const eliminar = e.target.closest('.admin-usuarios-btn-eliminar');
+    if (eliminar) {
+      eliminarUsuario(eliminar.dataset.cedula, eliminar.dataset.nombre);
+    }
   });
 }
 
 function bindModalEvents() {
-  const form = document.getElementById('form-reset-contrasena');
-  const btnCancelar = document.getElementById('btn-reset-cancelar');
-  const backdrop = document.getElementById('modal-reset-backdrop');
+  const form = document.getElementById('form-usuario');
+  const btnCancelar = document.getElementById('btn-usuario-cancelar');
+  const backdrop = document.getElementById('modal-usuario-backdrop');
 
   if (form?.dataset.bound === '1') return;
   if (form) form.dataset.bound = '1';
 
-  form?.addEventListener('submit', enviarReset);
-  btnCancelar?.addEventListener('click', cerrarModalReset);
-  backdrop?.addEventListener('click', cerrarModalReset);
+  form?.addEventListener('submit', enviarUsuario);
+  btnCancelar?.addEventListener('click', cerrarModalUsuario);
+  backdrop?.addEventListener('click', cerrarModalUsuario);
 }
 
-/**
- * @param {string} token JWT del administrador
- */
 export async function renderPanelUsuarios(token) {
-  state = { q: '', token: token || '', resetCedula: '', resetNombre: '' };
+  state = { q: '', token: token || '', mode: 'create', cedulaOriginal: '' };
 
   const panel = document.getElementById('panel-principal');
   panel.innerHTML = `
     <div class="noticias-panel admin-usuarios-panel">
       <div class="noticias-header">
         <div>
-          <h2 class="noticias-titulo">Usuarios — Restablecer contraseña</h2>
-          <p class="noticias-subtitulo">Busque al técnico y asigne una contraseña temporal</p>
+          <h2 class="noticias-titulo">Usuarios</h2>
+          <p class="noticias-subtitulo">Crear, editar o eliminar técnicos. La contraseña se restablece al editar si la completa.</p>
         </div>
-        <div class="noticias-busqueda-wrap">
-          <label for="admin-usuarios-busqueda" class="noticias-busqueda-label">Buscar por cédula o nombre</label>
-          <input type="search" id="admin-usuarios-busqueda" class="noticias-busqueda" placeholder="Cédula o nombre…" autocomplete="off">
+        <div class="admin-usuarios-toolbar">
+          <div class="noticias-busqueda-wrap">
+            <label for="admin-usuarios-busqueda" class="noticias-busqueda-label">Buscar por cédula o nombre</label>
+            <input type="search" id="admin-usuarios-busqueda" class="noticias-busqueda" placeholder="Cédula o nombre…" autocomplete="off">
+          </div>
+          <button type="button" class="btn btn--primario" id="btn-usuario-nuevo">Nuevo usuario</button>
         </div>
       </div>
 
@@ -253,7 +335,7 @@ export async function renderPanelUsuarios(token) {
               <th>Nombre</th>
               <th>Cargo</th>
               <th>Rol</th>
-              <th>Acción</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="admin-usuarios-tbody">
@@ -276,5 +358,5 @@ export async function renderPanelUsuarios(token) {
 }
 
 export function cerrarModalResetAdmin() {
-  cerrarModalReset();
+  cerrarModalUsuario();
 }
