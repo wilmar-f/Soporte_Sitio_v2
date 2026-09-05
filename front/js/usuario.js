@@ -237,6 +237,8 @@ const SEDES_CODIGOS = [
 let datosUsuarios   = [];  // [{cedula, nombreUsuario}]
 let datosInventario = [];  // [{serial, etiqueta, fabricante, modelo}]
 let inventarioListo = Promise.resolve();
+let recargaInventarioEnVuelo = null;
+let busquedaSerialGen = 0;
 
 /* ══════════════════════════════════════════════════════
    4. INICIALIZACIÓN
@@ -319,33 +321,43 @@ function renderInfoUsuario() {
 
 /* ── Carga datos maestros al iniciar ───────────────── */
 async function recargarInventario() {
-  try {
-    const res = await fetch('/api/inventario', {
-      headers: { Authorization: `Bearer ${tokenGuardado}` },
-    });
-    if (res.ok) {
-      datosInventario = await res.json();
-      return true;
+  if (recargaInventarioEnVuelo) return recargaInventarioEnVuelo;
+
+  recargaInventarioEnVuelo = (async () => {
+    try {
+      const res = await fetch('/api/inventario', {
+        headers: { Authorization: `Bearer ${tokenGuardado}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          datosInventario = data;
+          return true;
+        }
+      }
+      console.error('Error recargando inventario:', res.status);
+      return false;
+    } catch (err) {
+      console.error('Error recargando inventario:', err);
+      return false;
+    } finally {
+      recargaInventarioEnVuelo = null;
     }
-    console.error('Error recargando inventario:', res.status);
-    return false;
-  } catch (err) {
-    console.error('Error recargando inventario:', err);
-    return false;
-  }
+  })();
+
+  return recargaInventarioEnVuelo;
 }
 
 async function cargarDatosIniciales() {
   try {
-    const [resUsuarios, resInventario] = await Promise.all([
-      fetch('/api/usuarios',   { headers: { Authorization: `Bearer ${tokenGuardado}` } }),
-      fetch('/api/inventario', { headers: { Authorization: `Bearer ${tokenGuardado}` } }),
+    const [resUsuarios, okInventario] = await Promise.all([
+      fetch('/api/usuarios', { headers: { Authorization: `Bearer ${tokenGuardado}` } }),
+      recargarInventario(),
     ]);
 
-    if (resUsuarios.ok)   datosUsuarios   = await resUsuarios.json();
-    if (resInventario.ok) datosInventario = await resInventario.json();
+    if (resUsuarios.ok) datosUsuarios = await resUsuarios.json();
 
-    if (!resInventario.ok || datosInventario.length === 0) {
+    if (!okInventario || datosInventario.length === 0) {
       toast('No se pudo cargar el inventario.', 'advertencia');
     }
 
@@ -457,11 +469,21 @@ function buscarPorCedula(cedula) {
   return encontrado ? encontrado.nombreUsuario : null;
 }
 
+function normalizarSerialBusqueda(value) {
+  let s = String(value ?? '').replace(/\s+/g, '').trim();
+  if (/^[+-]?\d*\.?\d+[eE][+-]?\d+$/.test(s)) {
+    const n = Number(s);
+    if (Number.isFinite(n) && Number.isSafeInteger(n)) s = String(n);
+  }
+  return s.toLowerCase();
+}
+
 /** Busca equipo por serial (comparación case-insensitive). Retorna objeto o null. */
 function buscarEquipoPorSerial(serial) {
-  const limpio = serial.trim().toLowerCase();
+  const limpio = normalizarSerialBusqueda(serial);
+  if (!limpio) return null;
   const encontrado = datosInventario.find(
-    e => String(e.serial).trim().toLowerCase() === limpio
+    e => normalizarSerialBusqueda(e.serial) === limpio
   );
   return encontrado || null;
 }
@@ -491,11 +513,14 @@ function limpiarCamposEquipo() {
  * @returns {Promise<boolean>} true si el serial existe en inventario
  */
 async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) {
+  const gen = ++busquedaSerialGen;
   const inputSerial = document.getElementById('serial');
   await inventarioListo;
+  if (gen !== busquedaSerialGen) return false;
 
   if (datosInventario.length === 0) {
     await recargarInventario();
+    if (gen !== busquedaSerialGen) return false;
     if (datosInventario.length === 0) {
       toast('No se pudo cargar el inventario.', 'error');
       return false;
@@ -504,10 +529,13 @@ async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) 
 
   let equipo = buscarEquipoPorSerial(serial);
 
-  if (!equipo && reintentar) {
+  if (!equipo && reintentar && datosInventario.length === 0) {
     await recargarInventario();
+    if (gen !== busquedaSerialGen) return false;
     equipo = buscarEquipoPorSerial(serial);
   }
+
+  if (gen !== busquedaSerialGen) return false;
 
   if (!equipo) {
     limpiarCamposEquipo();
@@ -794,6 +822,7 @@ function registrarEventosFormulario() {
   inputSerial.addEventListener('blur', async () => {
     const serial = inputSerial.value.trim();
     if (!serial) {
+      busquedaSerialGen += 1;
       limpiarCamposEquipo();
       return;
     }
@@ -1110,7 +1139,7 @@ async function validarFormulario() {
   if (serialVal) {
     await inventarioListo;
     let equipoSerial = buscarEquipoPorSerial(serialVal);
-    if (!equipoSerial) {
+    if (!equipoSerial && datosInventario.length === 0) {
       await recargarInventario();
       equipoSerial = buscarEquipoPorSerial(serialVal);
     }

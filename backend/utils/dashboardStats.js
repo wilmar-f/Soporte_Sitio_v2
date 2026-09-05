@@ -34,6 +34,7 @@ function matchesSede(row, sedeFiltro) {
   if (!sedeFiltro) return true;
   const q = String(sedeFiltro).toLowerCase();
   return (
+    String(row.ubicacionFisica ?? '').toLowerCase() === q ||
     String(row.sede ?? '').toLowerCase() === q ||
     String(row.sedeCodigo ?? '').toLowerCase() === q
   );

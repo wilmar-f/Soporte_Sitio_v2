@@ -66,7 +66,7 @@ function renderTableRows(items) {
   return items.map(row => `
     <tr>
       <td>${esc(formatFecha(row.fecha))}</td>
-      <td>${esc(row.sedeCodigo || row.sede || '—')}</td>
+      <td>${esc(row.ubicacionFisica || row.sedeCodigo || row.sede || '—')}</td>
       <td>${esc(row.nombreTecnico || '—')}</td>
       <td>${esc(labelTipo(row.tipoDiagnostico))}</td>
       <td>${esc(row.serial || '—')}</td>
@@ -82,7 +82,7 @@ function renderCharts(data) {
   if (kpiEl) {
     kpiEl.innerHTML = renderKpis([
       { value: k.total ?? 0, label: 'Total diagnósticos', hint: 'En el filtro actual' },
-      { value: k.sedeTop || '—', label: 'Sede con más casos' },
+      { value: k.sedeTop || '—', label: 'UN con más casos' },
       { value: k.tecnicoTop || '—', label: 'Técnico más activo' },
       { value: k.tipoTop || '—', label: 'Diagnóstico más frecuente' },
     ]);
@@ -94,7 +94,7 @@ function renderCharts(data) {
   const tec = document.getElementById('dash-diag-tec');
   if (mes) mes.innerHTML = renderMonthBars(agg.porMes, empty);
   if (tipo) tipo.innerHTML = renderPie(agg.porTipo, empty, 'Por tipo de diagnóstico');
-  if (sede) sede.innerHTML = renderBars(agg.porSede, 'Sin sede en los registros (los PDF anteriores no guardaban sede).');
+  if (sede) sede.innerHTML = renderBars(agg.porSede, 'Sin UN en los registros (los PDF anteriores no guardaban ubicación física).');
   if (tec) tec.innerHTML = renderBars(agg.porTecnico, empty);
 }
 
@@ -128,7 +128,7 @@ function renderPanelContent(data) {
     'noticias-filtro-sede',
     (data.filtros?.sedes || []).map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join(''),
     state.sede,
-    'Todas las sedes'
+    'Todas las UN'
   );
   fillSelect(
     'noticias-filtro-tecnico',
@@ -257,8 +257,8 @@ export async function renderPanelNoticias(token) {
           <input type="date" id="noticias-filtro-hasta">
         </label>
         <label class="stats-filter">
-          Sede
-          <select id="noticias-filtro-sede"><option value="">Todas las sedes</option></select>
+          UN
+          <select id="noticias-filtro-sede"><option value="">Todas las UN</option></select>
         </label>
         <label class="stats-filter">
           Técnico
@@ -280,7 +280,7 @@ export async function renderPanelNoticias(token) {
                   <option value="">Todos los años</option>
                 </select>
               </th>
-              <th>Sede</th>
+              <th>UN</th>
               <th>Técnico</th>
               <th>Tipo diagnóstico</th>
               <th>Serial</th>
@@ -312,7 +312,7 @@ export async function renderPanelNoticias(token) {
             <div id="dash-diag-tipo"></div>
           </div>
           <div>
-            <h4>Por sede</h4>
+            <h4>Por UN</h4>
             <div id="dash-diag-sede"></div>
           </div>
           <div class="stats-span">

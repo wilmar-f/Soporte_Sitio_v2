@@ -24,8 +24,23 @@ function normalizeHeader(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function serialFromNumber(n) {
+  if (!Number.isFinite(n)) return '';
+  if (Number.isSafeInteger(n)) return String(n);
+  return n.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 0 });
+}
+
 function normalizeSerial(value) {
-  const s = String(value ?? '').trim();
+  let s;
+  if (typeof value === 'number') {
+    s = serialFromNumber(value);
+  } else {
+    s = String(value ?? '').replace(/\s+/g, '').trim();
+    if (/^[+-]?\d*\.?\d+[eE][+-]?\d+$/.test(s)) {
+      s = serialFromNumber(Number(s));
+    }
+  }
+  if (!s) return '';
   return s.length > 64 ? s.slice(0, 64) : s;
 }
 
@@ -41,17 +56,22 @@ function mapRow(rawRow) {
     normalized[normalizeHeader(key)] = val;
   }
 
-  const pick = (aliases) => {
+  const pickRaw = (aliases) => {
     for (const alias of aliases) {
       const val = normalized[normalizeHeader(alias)];
       if (val !== undefined && val !== null && String(val).trim() !== '') {
-        return String(val).trim();
+        return val;
       }
     }
     return '';
   };
 
-  const serial = normalizeSerial(pick(HEADER_MAP.serial));
+  const pick = (aliases) => {
+    const raw = pickRaw(aliases);
+    return raw === '' ? '' : String(raw).trim();
+  };
+
+  const serial = normalizeSerial(pickRaw(HEADER_MAP.serial));
   if (!serial) return { serial: '', etiqueta: '', fabricante: '', modelo: '' };
 
   return {

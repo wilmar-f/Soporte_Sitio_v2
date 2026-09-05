@@ -1,4 +1,4 @@
-const { reloadInventario } = require('../utils/readInventario');
+const { getInventario } = require('../utils/readInventario');
 const { reloadUsuarios } = require('../utils/readUsuarios');
 
 // GET /api/usuarios — lee usuarios.xlsx y retorna [{cedula, nombreUsuario}]
@@ -14,7 +14,7 @@ exports.getUsuarios = (req, res) => {
 // GET /api/inventario — lee inventario.xlsx y retorna [{serial, etiqueta, fabricante, modelo}]
 exports.getInventario = (req, res) => {
   try {
-    const results = reloadInventario();
+    const results = getInventario();
     res.json(results);
   } catch (err) {
     console.error('Error leyendo inventario.xlsx:', err.message);

@@ -50,6 +50,10 @@ function writeAll(records) {
   fs.writeFileSync(storePath, JSON.stringify(records, null, 2), 'utf8');
 }
 
+function labelUn(row) {
+  return String(row.ubicacionFisica || row.sedeCodigo || row.sede || '').trim();
+}
+
 function extractAnio(fecha) {
   const match = String(fecha ?? '').match(/^(\d{4})/);
   if (match) return parseInt(match[1], 10);
@@ -65,6 +69,7 @@ function appendDiagnostico(record) {
     fecha: String(record.fecha ?? '').trim(),
     sede: String(record.sede ?? '').trim(),
     sedeCodigo: String(record.sedeCodigo ?? '').trim(),
+    ubicacionFisica: String(record.ubicacionFisica ?? '').trim(),
     nombreTecnico: String(record.nombreTecnico ?? '').trim(),
     cedulaTecnico: String(record.cedulaTecnico ?? '').trim(),
     tipoDiagnostico: String(record.tipoDiagnostico ?? '').trim().toUpperCase(),
@@ -119,11 +124,11 @@ function listDiagnosticos({
   items.sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha));
 
   const porTipo = countBy(items, r => TIPOS_LABEL[r.tipoDiagnostico] || r.tipoDiagnostico || 'Sin tipo');
-  const porSede = countBy(items, r => r.sedeCodigo || r.sede);
+  const porSede = countBy(items, r => labelUn(r));
   const porTecnico = countBy(items, r => r.nombreTecnico || r.cedulaTecnico);
   const porMes = countByMes(items, r => mesBogota(r.fecha || r.createdAt));
 
-  const sedes = [...new Set(all.map(r => r.sedeCodigo || r.sede).filter(Boolean))]
+  const sedes = [...new Set(all.map(r => labelUn(r)).filter(Boolean))]
     .sort((a, b) => String(a).localeCompare(String(b), 'es'));
 
   return {
