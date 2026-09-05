@@ -85,7 +85,6 @@ function renderInfoUsuario() {
   setSidebarBtnVisible(document.getElementById('btn-noticias'), esAdmin);
   setSidebarBtnVisible(document.getElementById('btn-estadisticas'), esAdmin);
   setSidebarBtnVisible(document.getElementById('btn-usuarios'), esAdmin);
-  setSidebarBtnVisible(document.getElementById('btn-cambiar-contrasena'), loginType === 'admin');
 }
 
 function setSidebarBtnVisible(btn, visible) {
@@ -320,7 +319,6 @@ function registrarEventos() {
   document.getElementById('btn-noticias')?.addEventListener('click', () => irAPanelUsuario('noticias'));
   document.getElementById('btn-estadisticas')?.addEventListener('click', () => irAPanelUsuario('estadisticas'));
   document.getElementById('btn-usuarios')?.addEventListener('click', () => irAPanelUsuario('usuarios'));
-  document.getElementById('btn-cambiar-contrasena')?.addEventListener('click', () => irAPanelUsuario('clave'));
   document.getElementById('btn-piloto-pdp')?.addEventListener('click', () => {
     window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
   });

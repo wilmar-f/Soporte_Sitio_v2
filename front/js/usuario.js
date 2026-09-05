@@ -315,9 +315,6 @@ function renderInfoUsuario() {
 
   const btnUsuarios = document.getElementById('btn-usuarios');
   setSidebarBtnVisible(btnUsuarios, esAdministrador());
-
-  const btnCambiarContrasena = document.getElementById('btn-cambiar-contrasena');
-  setSidebarBtnVisible(btnCambiarContrasena, tipo === 'admin');
 }
 
 /* ── Carga datos maestros al iniciar ───────────────── */
@@ -407,8 +404,6 @@ function registrarEventosSidebar() {
   }
 
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
-
-  registrarModalCambiarContrasena();
 }
 
 function abrirPanelDesdeQuery() {
@@ -430,116 +425,7 @@ function abrirPanelDesdeQuery() {
   if (panel === 'usuarios' && esAdministrador()) {
     activarBotonSidebar('btn-usuarios');
     renderPanelUsuarios(tokenGuardado);
-    return;
   }
-  if (panel === 'clave' && usuarioActual.loginType === 'admin') {
-    abrirModalCambiarContrasena();
-  }
-}
-
-function abrirModalCambiarContrasena() {
-  const modal = document.getElementById('modal-cambiar-contrasena');
-  const form = document.getElementById('form-cambiar-contrasena');
-  if (!modal || !form) return;
-  form.reset();
-  modal.hidden = false;
-  modal.setAttribute('aria-hidden', 'false');
-  document.getElementById('clave-actual')?.focus();
-}
-
-function cerrarModalCambiarContrasena() {
-  const modal = document.getElementById('modal-cambiar-contrasena');
-  if (!modal) return;
-  modal.hidden = true;
-  modal.setAttribute('aria-hidden', 'true');
-  document.getElementById('form-cambiar-contrasena')?.reset();
-}
-
-const MIN_PASSWORD_LENGTH = 6;
-const PASSWORD_COMPLEXITY_MSG =
-  'La nueva contraseña debe tener al menos 6 caracteres, una letra mayúscula, un número y un carácter especial (. * + -).';
-
-function validarComplejidadContrasena(contrasena) {
-  const pwd = String(contrasena);
-  if (pwd.length < MIN_PASSWORD_LENGTH) {
-    return { ok: false, error: PASSWORD_COMPLEXITY_MSG };
-  }
-  const valid =
-    /[A-Z]/.test(pwd) &&
-    /[0-9]/.test(pwd) &&
-    /[.*+\-]/.test(pwd);
-  return valid ? { ok: true } : { ok: false, error: PASSWORD_COMPLEXITY_MSG };
-}
-
-function registrarModalCambiarContrasena() {
-  const btnAbrir = document.getElementById('btn-cambiar-contrasena');
-  const btnCancelar = document.getElementById('btn-clave-cancelar');
-  const backdrop = document.getElementById('modal-clave-backdrop');
-  const form = document.getElementById('form-cambiar-contrasena');
-
-  if (usuarioActual.loginType !== 'admin') return;
-
-  btnAbrir?.addEventListener('click', abrirModalCambiarContrasena);
-  btnCancelar?.addEventListener('click', cerrarModalCambiarContrasena);
-  backdrop?.addEventListener('click', cerrarModalCambiarContrasena);
-
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!tokenGuardado) {
-      toast('Sesión expirada. Vuelve a ingresar.', 'error');
-      return;
-    }
-
-    const contrasenaActual = document.getElementById('clave-actual')?.value || '';
-    const contrasenaNueva = document.getElementById('clave-nueva')?.value || '';
-    const contrasenaConfirmacion = document.getElementById('clave-confirmar')?.value || '';
-
-    if (contrasenaNueva !== contrasenaConfirmacion) {
-      toast('La nueva contraseña y la confirmación no coinciden.', 'advertencia');
-      return;
-    }
-
-    const complejidad = validarComplejidadContrasena(contrasenaNueva);
-    if (!complejidad.ok) {
-      toast(complejidad.error, 'advertencia');
-      return;
-    }
-
-    const btnGuardar = document.getElementById('btn-clave-guardar');
-    if (btnGuardar) {
-      btnGuardar.disabled = true;
-      btnGuardar.textContent = 'Guardando…';
-    }
-
-    try {
-      const res = await fetch('/api/cambiar-contrasena', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenGuardado}`,
-        },
-        body: JSON.stringify({ contrasenaActual, contrasenaNueva, contrasenaConfirmacion }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        toast(data.error || 'No se pudo cambiar la contraseña.', 'error');
-        return;
-      }
-
-      toast(data.mensaje || 'Contraseña actualizada correctamente.', 'exito');
-      cerrarModalCambiarContrasena();
-    } catch (err) {
-      console.error('Error cambiando contraseña:', err);
-      toast('Error de conexión al cambiar la contraseña.', 'error');
-    } finally {
-      if (btnGuardar) {
-        btnGuardar.disabled = false;
-        btnGuardar.textContent = 'Guardar';
-      }
-    }
-  });
 }
 
 function activarBotonSidebar(idActivo) {
