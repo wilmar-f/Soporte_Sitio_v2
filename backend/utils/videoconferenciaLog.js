@@ -2,6 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { getDataDir } = require('./dataPaths');
+const {
+  inRango,
+  matchesSede,
+  matchesTecnico,
+  countBy,
+  topLabel,
+  paginate,
+  collectTecnicos,
+} = require('./dashboardStats');
 
 function getLogPath() {
   return path.join(getDataDir(), 'videoconferencia-log.json');
@@ -46,4 +55,38 @@ function appendFoto(record) {
   return entry;
 }
 
-module.exports = { readAll, appendFoto, ensureLog };
+function listFotos({ desde = '', hasta = '', sede = '', tecnico = '', page = 1, limit = 10 } = {}) {
+  const all = readAll();
+  const items = all
+    .filter(row =>
+      inRango(row.createdAt, desde, hasta) &&
+      matchesSede(row, sede) &&
+      matchesTecnico(row, tecnico)
+    )
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const porSede = countBy(items, r => r.sede);
+  const porSala = countBy(items, r => `${r.sede} / ${r.sala}`);
+  const porTecnico = countBy(items, r => r.nombreTecnico || r.cedulaTecnico);
+
+  return {
+    ...paginate(items, page, limit),
+    filtros: {
+      sedes: [...new Set(all.map(r => r.sede).filter(Boolean))]
+        .sort((a, b) => String(a).localeCompare(String(b), 'es')),
+      tecnicos: collectTecnicos(all),
+    },
+    agregados: {
+      kpis: {
+        total: items.length,
+        sedeTop: topLabel(porSede),
+        tecnicoTop: topLabel(porTecnico),
+      },
+      porSede,
+      porSala,
+      porTecnico,
+    },
+  };
+}
+
+module.exports = { readAll, appendFoto, ensureLog, listFotos };

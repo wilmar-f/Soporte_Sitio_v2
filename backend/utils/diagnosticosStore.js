@@ -2,6 +2,24 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { getDataDir } = require('./dataPaths');
+const {
+  inRango,
+  matchesSede,
+  matchesTecnico,
+  countBy,
+  countByMes,
+  topLabel,
+  paginate,
+  collectTecnicos,
+  mesBogota,
+} = require('./dashboardStats');
+
+const TIPOS_LABEL = {
+  ESTANDAR: 'DIAGNOSTICO CON ACTIVOS',
+  GESTOR_GARANTIAS: 'DIAGNOSTICO CON GESTOR GARANTIAS',
+  RENOVACION: 'DIAGNOSTICO RENOVACION',
+  DAAS: 'DAAS',
+};
 
 function getStorePath() {
   return path.join(getDataDir(), 'diagnosticos.json');
@@ -58,8 +76,19 @@ function appendDiagnostico(record) {
   return entry;
 }
 
-function listDiagnosticos({ q = '', anio = '', tipo = '', page = 1, limit = 20 } = {}) {
-  let items = readAll();
+function listDiagnosticos({
+  q = '',
+  anio = '',
+  tipo = '',
+  desde = '',
+  hasta = '',
+  sede = '',
+  tecnico = '',
+  page = 1,
+  limit = 10,
+} = {}) {
+  const all = readAll();
+  let items = all;
 
   const query = String(q).trim().toLowerCase();
   if (query) {
@@ -81,21 +110,40 @@ function listDiagnosticos({ q = '', anio = '', tipo = '', page = 1, limit = 20 }
     items = items.filter(row => String(row.tipoDiagnostico ?? '').toUpperCase() === tipoNorm);
   }
 
-  items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  items = items.filter(row =>
+    inRango(row.fecha || row.createdAt, desde, hasta) &&
+    matchesSede(row, sede) &&
+    matchesTecnico(row, tecnico)
+  );
 
-  const total = items.length;
-  const pageSize = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
-  const pageNum = Math.max(1, parseInt(page, 10) || 1);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(pageNum, totalPages);
-  const start = (safePage - 1) * pageSize;
+  items.sort((a, b) => new Date(b.createdAt || b.fecha) - new Date(a.createdAt || a.fecha));
+
+  const porTipo = countBy(items, r => TIPOS_LABEL[r.tipoDiagnostico] || r.tipoDiagnostico || 'Sin tipo');
+  const porSede = countBy(items, r => r.sedeCodigo || r.sede);
+  const porTecnico = countBy(items, r => r.nombreTecnico || r.cedulaTecnico);
+  const porMes = countByMes(items, r => mesBogota(r.fecha || r.createdAt));
+
+  const sedes = [...new Set(all.map(r => r.sedeCodigo || r.sede).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), 'es'));
 
   return {
-    items: items.slice(start, start + pageSize),
-    total,
-    page: safePage,
-    pageSize,
-    totalPages,
+    ...paginate(items, page, limit),
+    filtros: {
+      sedes,
+      tecnicos: collectTecnicos(all),
+    },
+    agregados: {
+      kpis: {
+        total: items.length,
+        sedeTop: topLabel(porSede),
+        tecnicoTop: topLabel(porTecnico),
+        tipoTop: topLabel(porTipo),
+      },
+      porTipo,
+      porSede,
+      porTecnico,
+      porMes,
+    },
   };
 }
 

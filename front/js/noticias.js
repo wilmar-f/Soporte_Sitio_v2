@@ -1,7 +1,16 @@
 /**
- * noticias.js — Panel de consulta de diagnósticos (solo administrador).
+ * noticias.js — Dashboard Diagnósticos (solo administrador).
  */
 import { toast } from './toast.js';
+import {
+  esc,
+  renderBars,
+  renderPie,
+  renderMonthBars,
+  renderKpis,
+  buildPagination,
+  fillSelect,
+} from './dashboard-charts.js';
 
 const TIPOS_LABEL = {
   ESTANDAR: 'DIAGNOSTICO CON ACTIVOS',
@@ -10,23 +19,19 @@ const TIPOS_LABEL = {
   DAAS: 'DAAS',
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 let state = {
   q: '',
   anio: '',
   tipo: '',
+  desde: '',
+  hasta: '',
+  sede: '',
+  tecnico: '',
   page: 1,
   token: '',
 };
-
-function esc(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 function labelTipo(value) {
   const key = String(value ?? '').toUpperCase();
@@ -39,14 +44,6 @@ function formatFecha(value) {
   const parts = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (parts) return `${parts[3]}/${parts[2]}/${parts[1]}`;
   return s;
-}
-
-function buildAnioOptions(anios, selected) {
-  const opts = ['<option value="">Todos los años</option>'];
-  for (const y of anios) {
-    opts.push(`<option value="${y}" ${String(selected) === String(y) ? 'selected' : ''}>${y}</option>`);
-  }
-  return opts.join('');
 }
 
 function buildTipoOptions(selected) {
@@ -62,55 +59,43 @@ function buildTipoOptions(selected) {
   ).join('');
 }
 
-function buildPagination(page, totalPages) {
-  if (totalPages <= 1) return '';
-
-  const pages = [];
-  const addBtn = (p, label = null, disabled = false, active = false) => {
-    pages.push(
-      `<button type="button" class="noticias-page-btn${active ? ' noticias-page-btn--activo' : ''}" data-page="${p}" ${disabled ? 'disabled' : ''}>${label ?? p}</button>`
-    );
-  };
-
-  addBtn(page - 1, '‹', page <= 1);
-
-  const windowSize = 5;
-  let start = Math.max(1, page - Math.floor(windowSize / 2));
-  let end = Math.min(totalPages, start + windowSize - 1);
-  start = Math.max(1, end - windowSize + 1);
-
-  if (start > 1) {
-    addBtn(1, '1', false, page === 1);
-    if (start > 2) pages.push('<span class="noticias-page-ellipsis">…</span>');
-  }
-
-  for (let p = start; p <= end; p++) {
-    addBtn(p, String(p), false, p === page);
-  }
-
-  if (end < totalPages) {
-    if (end < totalPages - 1) pages.push('<span class="noticias-page-ellipsis">…</span>');
-    addBtn(totalPages, String(totalPages), false, page === totalPages);
-  }
-
-  addBtn(page + 1, '›', page >= totalPages);
-
-  return `<div class="noticias-pagination">${pages.join('')}</div>`;
-}
-
 function renderTableRows(items) {
   if (!items.length) {
-    return '<tr><td colspan="5" class="noticias-empty">No hay diagnósticos que coincidan con los filtros.</td></tr>';
+    return '<tr><td colspan="6" class="noticias-empty">No hay diagnósticos que coincidan con los filtros.</td></tr>';
   }
   return items.map(row => `
     <tr>
       <td>${esc(formatFecha(row.fecha))}</td>
+      <td>${esc(row.sedeCodigo || row.sede || '—')}</td>
       <td>${esc(row.nombreTecnico || '—')}</td>
       <td>${esc(labelTipo(row.tipoDiagnostico))}</td>
       <td>${esc(row.serial || '—')}</td>
       <td>${esc(row.etiqueta || '—')}</td>
     </tr>
   `).join('');
+}
+
+function renderCharts(data) {
+  const agg = data.agregados || { kpis: {}, porTipo: [], porSede: [], porTecnico: [], porMes: [] };
+  const k = agg.kpis || {};
+  const kpiEl = document.getElementById('dash-diag-kpi');
+  if (kpiEl) {
+    kpiEl.innerHTML = renderKpis([
+      { value: k.total ?? 0, label: 'Total diagnósticos', hint: 'En el filtro actual' },
+      { value: k.sedeTop || '—', label: 'Sede con más casos' },
+      { value: k.tecnicoTop || '—', label: 'Técnico más activo' },
+      { value: k.tipoTop || '—', label: 'Diagnóstico más frecuente' },
+    ]);
+  }
+  const empty = 'Sin diagnósticos en el filtro.';
+  const mes = document.getElementById('dash-diag-mes');
+  const tipo = document.getElementById('dash-diag-tipo');
+  const sede = document.getElementById('dash-diag-sede');
+  const tec = document.getElementById('dash-diag-tec');
+  if (mes) mes.innerHTML = renderMonthBars(agg.porMes, empty);
+  if (tipo) tipo.innerHTML = renderPie(agg.porTipo, empty, 'Por tipo de diagnóstico');
+  if (sede) sede.innerHTML = renderBars(agg.porSede, 'Sin sede en los registros (los PDF anteriores no guardaban sede).');
+  if (tec) tec.innerHTML = renderBars(agg.porTecnico, empty);
 }
 
 function renderPanelContent(data) {
@@ -131,8 +116,30 @@ function renderPanelContent(data) {
 
   const anioSelect = document.getElementById('noticias-filtro-anio');
   if (anioSelect) {
-    anioSelect.innerHTML = buildAnioOptions(anios, state.anio);
+    const opts = ['<option value="">Todos los años</option>'];
+    for (const y of anios) {
+      opts.push(`<option value="${y}">${y}</option>`);
+    }
+    anioSelect.innerHTML = opts.join('');
+    anioSelect.value = state.anio;
   }
+
+  fillSelect(
+    'noticias-filtro-sede',
+    (data.filtros?.sedes || []).map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join(''),
+    state.sede,
+    'Todas las sedes'
+  );
+  fillSelect(
+    'noticias-filtro-tecnico',
+    (data.filtros?.tecnicos || []).map(t =>
+      `<option value="${esc(t.cedula)}">${esc(t.nombre)} (${esc(t.cedula)})</option>`
+    ).join(''),
+    state.tecnico,
+    'Todos los técnicos'
+  );
+
+  renderCharts(data);
 }
 
 async function fetchDiagnosticos() {
@@ -143,6 +150,10 @@ async function fetchDiagnosticos() {
   if (state.q) params.set('q', state.q);
   if (state.anio) params.set('anio', state.anio);
   if (state.tipo) params.set('tipo', state.tipo);
+  if (state.desde) params.set('desde', state.desde);
+  if (state.hasta) params.set('hasta', state.hasta);
+  if (state.sede) params.set('sede', state.sede);
+  if (state.tecnico) params.set('tecnico', state.tecnico);
 
   const res = await fetch(`/api/diagnosticos?${params}`, {
     headers: { Authorization: `Bearer ${state.token}` },
@@ -159,16 +170,16 @@ async function fetchDiagnosticos() {
 async function loadAndRender() {
   const tbody = document.getElementById('noticias-tbody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="5" class="noticias-empty">Cargando…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="noticias-empty">Cargando…</td></tr>';
   }
 
   try {
     const data = await fetchDiagnosticos();
     renderPanelContent(data);
   } catch (err) {
-    console.error('Error cargando noticias:', err);
+    console.error('Error cargando dashboard diagnósticos:', err);
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="5" class="noticias-empty noticias-empty--error">${esc(err.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="noticias-empty noticias-empty--error">${esc(err.message)}</td></tr>`;
     }
     toast('No se pudo cargar el historial de diagnósticos.', 'error');
   }
@@ -191,16 +202,19 @@ function bindPanelEvents() {
   });
 
   panel.addEventListener('change', (e) => {
-    if (e.target.id === 'noticias-filtro-anio') {
-      state.anio = e.target.value;
-      state.page = 1;
-      loadAndRender();
-    }
-    if (e.target.id === 'noticias-filtro-tipo') {
-      state.tipo = e.target.value;
-      state.page = 1;
-      loadAndRender();
-    }
+    const map = {
+      'noticias-filtro-anio': 'anio',
+      'noticias-filtro-tipo': 'tipo',
+      'noticias-filtro-sede': 'sede',
+      'noticias-filtro-tecnico': 'tecnico',
+      'noticias-filtro-desde': 'desde',
+      'noticias-filtro-hasta': 'hasta',
+    };
+    const key = map[e.target.id];
+    if (!key) return;
+    state[key] = e.target.value;
+    state.page = 1;
+    loadAndRender();
   });
 
   panel.addEventListener('click', (e) => {
@@ -214,24 +228,46 @@ function bindPanelEvents() {
   });
 }
 
-/**
- * @param {string} token JWT del administrador
- */
 export async function renderPanelNoticias(token) {
-  state = { q: '', anio: '', tipo: '', page: 1, token: token || '' };
+  state = {
+    q: '', anio: '', tipo: '', desde: '', hasta: '', sede: '', tecnico: '', page: 1, token: token || '',
+  };
 
   const panel = document.getElementById('panel-principal');
   panel.innerHTML = `
-    <div class="noticias-panel">
+    <div class="noticias-panel dash-panel">
       <div class="noticias-header">
         <div>
-          <h2 class="noticias-titulo">Noticias — Diagnósticos realizados</h2>
-          <p class="noticias-subtitulo">Consulta de historial (solo lectura)</p>
+          <h2 class="noticias-titulo">Dashboard Diagnósticos</h2>
+          <p class="noticias-subtitulo">Historial y gráficos (solo administrador)</p>
         </div>
         <div class="noticias-busqueda-wrap">
           <label for="noticias-busqueda" class="noticias-busqueda-label">Buscar por serial o placa</label>
           <input type="search" id="noticias-busqueda" class="noticias-busqueda" placeholder="Serial o etiqueta…" autocomplete="off">
         </div>
+      </div>
+
+      <div class="stats-filters">
+        <label class="stats-filter">
+          Desde
+          <input type="date" id="noticias-filtro-desde">
+        </label>
+        <label class="stats-filter">
+          Hasta
+          <input type="date" id="noticias-filtro-hasta">
+        </label>
+        <label class="stats-filter">
+          Sede
+          <select id="noticias-filtro-sede"><option value="">Todas las sedes</option></select>
+        </label>
+        <label class="stats-filter">
+          Técnico
+          <select id="noticias-filtro-tecnico"><option value="">Todos los técnicos</option></select>
+        </label>
+        <label class="stats-filter">
+          Tipo
+          <select id="noticias-filtro-tipo">${buildTipoOptions('')}</select>
+        </label>
       </div>
 
       <div class="noticias-table-wrap">
@@ -244,19 +280,15 @@ export async function renderPanelNoticias(token) {
                   <option value="">Todos los años</option>
                 </select>
               </th>
+              <th>Sede</th>
               <th>Técnico</th>
-              <th>
-                Tipo diagnóstico
-                <select id="noticias-filtro-tipo" class="noticias-filtro" aria-label="Filtrar por tipo">
-                  ${buildTipoOptions('')}
-                </select>
-              </th>
+              <th>Tipo diagnóstico</th>
               <th>Serial</th>
               <th>Placa</th>
             </tr>
           </thead>
           <tbody id="noticias-tbody">
-            <tr><td colspan="5" class="noticias-empty">Cargando…</td></tr>
+            <tr><td colspan="6" class="noticias-empty">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
@@ -265,6 +297,30 @@ export async function renderPanelNoticias(token) {
         <p class="noticias-meta" id="noticias-meta"></p>
         <div id="noticias-pagination"></div>
       </div>
+
+      <div class="stats-kpi" id="dash-diag-kpi"></div>
+
+      <section class="stats-block">
+        <h3>Gráficos</h3>
+        <div class="stats-grid">
+          <div class="stats-span">
+            <h4>Evolución por mes</h4>
+            <div id="dash-diag-mes"></div>
+          </div>
+          <div>
+            <h4>Por tipo</h4>
+            <div id="dash-diag-tipo"></div>
+          </div>
+          <div>
+            <h4>Por sede</h4>
+            <div id="dash-diag-sede"></div>
+          </div>
+          <div class="stats-span">
+            <h4>Por técnico</h4>
+            <div id="dash-diag-tec"></div>
+          </div>
+        </div>
+      </section>
     </div>
   `;
 

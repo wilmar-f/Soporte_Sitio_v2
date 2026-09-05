@@ -24,9 +24,9 @@ function bootstrapDataFiles() {
 
   const seedInventario = path.join(SEED_DATA_DIR, 'inventario.xlsx');
   const targetInventario = path.join(dataDir, 'inventario.xlsx');
-  if (!fs.existsSync(targetInventario) && fs.existsSync(seedInventario)) {
+  if (fs.existsSync(seedInventario) && path.resolve(seedInventario) !== path.resolve(targetInventario)) {
     fs.copyFileSync(seedInventario, targetInventario);
-    console.log(`Bootstrap: inventario.xlsx copiado a ${targetInventario}`);
+    console.log(`Bootstrap: inventario.xlsx actualizado desde el repositorio → ${targetInventario}`);
   }
 
   const seedVideoconferencia = path.join(SEED_DATA_DIR, 'videoconferencia.xlsx');
