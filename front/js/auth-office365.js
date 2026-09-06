@@ -12,6 +12,7 @@
  */
 import { toast } from './toast.js';
 import { registrarUltimoAcceso } from './ultimo-acceso.js';
+import { guardar } from './sesion.js';
 
 /* ══════════════════════════════════════════════════════
    CONFIGURACIÓN MSAL
@@ -27,7 +28,7 @@ const msalConfig = {
     redirectUri: window.location.origin,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
+    cacheLocation: 'localStorage',
     storeAuthStateInCookie: false,
   },
 };
@@ -129,18 +130,16 @@ export async function loginConOffice365(btnElement) {
     // 6. jobTitle: null si está vacío (indica que el campo debe quedar editable)
     const cargoTecnico = perfil.jobTitle?.trim() || null;
 
-    // 7. Guardar sesión en sessionStorage
-    sessionStorage.setItem('loginType', 'office365');
-    sessionStorage.setItem(
-      'o365session',
-      JSON.stringify({
+    guardar({
+      loginType: 'office365',
+      o365session: JSON.stringify({
         nombreCompleto: perfil.displayName || loginResponse.account.name || '',
         correo,
         cedulaTecnico,
         cargoTecnico,
         fotoPerfil,
-      })
-    );
+      }),
+    });
 
     registrarUltimoAcceso(cedulaTecnico || parteLocal);
 

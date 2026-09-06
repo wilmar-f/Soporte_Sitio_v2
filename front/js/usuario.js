@@ -10,6 +10,7 @@
 import { renderBanner }      from './banner.js';
 import { toast }             from './toast.js';
 import { logoutOffice365 }   from './auth-office365.js';
+import { leer as leerSesion, cerrar as cerrarSesionStorage, escucharCierreEnOtrasPestanas } from './sesion.js';
 import {
   renderDiagnosticoInteractivo,
   initDiagnosticoInteractivo,
@@ -27,10 +28,7 @@ let evidenciasAdjuntas = [];
 /* ══════════════════════════════════════════════════════
    1. VERIFICACIÓN DE SESIÓN
    ══════════════════════════════════════════════════════ */
-const loginType      = sessionStorage.getItem('loginType') || 'admin';
-const tokenGuardado  = sessionStorage.getItem('token');
-const usuarioGuardado = sessionStorage.getItem('usuario');
-const o365Guardado   = sessionStorage.getItem('o365session');
+const { loginType, token: tokenGuardado, usuario: usuarioGuardado, o365session: o365Guardado } = leerSesion();
 
 const sesionValida =
   (loginType === 'admin'    && tokenGuardado  && usuarioGuardado) ||
@@ -38,6 +36,8 @@ const sesionValida =
 
 if (!sesionValida) {
   window.location.replace('/pages/index.html');
+} else {
+  escucharCierreEnOtrasPestanas();
 }
 
 // Normalizar datos del usuario para uso unificado en toda la página
@@ -449,11 +449,8 @@ function activarBotonSidebar(idActivo) {
 function cerrarSesion() {
   if (usuarioActual.loginType === 'office365') {
     logoutOffice365();
-    sessionStorage.removeItem('o365session');
   }
-  sessionStorage.removeItem('token');
-  sessionStorage.removeItem('usuario');
-  sessionStorage.removeItem('loginType');
+  cerrarSesionStorage();
   toast('Su sesión ha sido cerrada con éxito.', 'exito');
   setTimeout(() => window.location.replace('/pages/index.html'), 1400);
 }

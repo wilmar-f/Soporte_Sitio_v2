@@ -4,12 +4,13 @@
 import { renderBanner }       from './banner.js';
 import { toast }              from './toast.js';
 import { registrarUltimoAcceso } from './ultimo-acceso.js';
+import { haySesion, guardar } from './sesion.js';
 
 // Inicializar banner
 renderBanner();
 
 // Si ya hay sesión activa (admin o Office 365), redirigir directamente
-if (sessionStorage.getItem('token') || sessionStorage.getItem('o365session')) {
+if (haySesion()) {
   window.location.replace('/pages/usuario.html');
 }
 
@@ -49,10 +50,11 @@ form.addEventListener('submit', async (e) => {
       return;
     }
 
-    // Guardar sesión en sessionStorage
-    sessionStorage.setItem('loginType', 'admin');
-    sessionStorage.setItem('token',   data.token);
-    sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
+    guardar({
+      loginType: 'admin',
+      token: data.token,
+      usuario: JSON.stringify(data.usuario),
+    });
     registrarUltimoAcceso(data.usuario?.cedula);
 
     toast('Acceso correcto. Redirigiendo…', 'exito');
