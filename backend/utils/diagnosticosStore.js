@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const { getDataDir } = require('./dataPaths');
 const {
   inRango,
-  matchesSede,
   matchesTecnico,
   countBy,
   countByMes,
@@ -115,9 +114,10 @@ function listDiagnosticos({
     items = items.filter(row => String(row.tipoDiagnostico ?? '').toUpperCase() === tipoNorm);
   }
 
+  const unFiltro = String(sede || '').trim().toLowerCase();
   items = items.filter(row =>
     inRango(row.fecha || row.createdAt, desde, hasta) &&
-    matchesSede(row, sede) &&
+    (!unFiltro || labelUn(row).toLowerCase() === unFiltro) &&
     matchesTecnico(row, tecnico)
   );
 
