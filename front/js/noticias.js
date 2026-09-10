@@ -167,7 +167,13 @@ async function fetchDiagnosticos() {
   return res.json();
 }
 
+function panelSigueNoticias() {
+  const panel = document.getElementById('panel-principal');
+  return panel && panel.dataset.panelActivo === 'noticias';
+}
+
 async function loadAndRender() {
+  if (!panelSigueNoticias()) return;
   const tbody = document.getElementById('noticias-tbody');
   if (tbody) {
     tbody.innerHTML = '<tr><td colspan="6" class="noticias-empty">Cargando…</td></tr>';
@@ -175,6 +181,7 @@ async function loadAndRender() {
 
   try {
     const data = await fetchDiagnosticos();
+    if (!panelSigueNoticias()) return;
     renderPanelContent(data);
   } catch (err) {
     console.error('Error cargando dashboard diagnósticos:', err);
@@ -234,6 +241,7 @@ export async function renderPanelNoticias(token) {
   };
 
   const panel = document.getElementById('panel-principal');
+  panel.dataset.panelActivo = 'noticias';
   panel.innerHTML = `
     <div class="noticias-panel dash-panel">
       <div class="noticias-header">

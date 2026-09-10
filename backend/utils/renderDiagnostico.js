@@ -35,6 +35,33 @@ const CAMPOS_TEXTO = [
   'intercambioPartes', 'razonSolicitud',
 ];
 
+function esNoAplica(val) {
+  const s = String(val ?? '').trim();
+  return !s || /^no\s*aplica$/i.test(s);
+}
+
+function parseNumero(val) {
+  const n = parseFloat(String(val ?? '').replace(',', '.').replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function formatRamPdf(val) {
+  const raw = String(val ?? '').trim();
+  if (esNoAplica(raw)) return raw || 'No Aplica';
+  const n = parseNumero(raw);
+  if (!Number.isFinite(n)) return raw;
+  if (/gb/i.test(raw) || n < 256) return `${Math.round(n)} GB`;
+  return `${Math.round(n / 1024)} GB`;
+}
+
+function formatHdPdf(val) {
+  const raw = String(val ?? '').trim();
+  if (esNoAplica(raw)) return raw || 'No Aplica';
+  const n = parseNumero(raw);
+  if (!Number.isFinite(n)) return raw;
+  return `${Math.round(n)} GB`;
+}
+
 function formatFechaPdf(val) {
   const m = String(val).match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(val ?? '');
@@ -57,6 +84,8 @@ function prepareView(raw = {}) {
     view[key] = String(raw[key] ?? '');
   }
   view.fecha = formatFechaPdf(raw.fecha);
+  view.ram = formatRamPdf(view.ram);
+  view.hd = formatHdPdf(view.hd);
   view.nombreTecnico = toTitleCase(view.nombreTecnico);
   view.cargoTecnico = toTitleCase(view.cargoTecnico);
 

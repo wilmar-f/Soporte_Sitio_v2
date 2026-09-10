@@ -1,1 +1,41 @@
-[]
+[
+  {
+    "id": "48784fdd-dc3a-470a-9a68-df046cd460f2",
+    "createdAt": "2026-09-09T23:03:08.663Z",
+    "fecha": "2026-09-09",
+    "sede": "ALKOMPRAR AKT BARRANQUILLA #3",
+    "sedeCodigo": "ALBAR",
+    "ubicacionFisica": "ALAVE",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "ESTANDAR",
+    "serial": "8CC3151BHH",
+    "etiqueta": "0042437"
+  },
+  {
+    "id": "66e02ddc-bf24-4369-9917-238fa984cd7d",
+    "createdAt": "2026-09-09T23:17:07.349Z",
+    "fecha": "2026-09-09",
+    "sede": "ADMON CENTRAL ALKOSTO AV 68",
+    "sedeCodigo": "AKB68",
+    "ubicacionFisica": "AKGIR",
+    "nombreTecnico": "adfasd",
+    "cedulaTecnico": "234",
+    "tipoDiagnostico": "ESTANDAR",
+    "serial": "8CC3151BHH",
+    "etiqueta": "0042437"
+  },
+  {
+    "id": "01a1aa2f-f2a5-43e9-83b2-e57614cc97bb",
+    "createdAt": "2026-09-10T00:32:54.853Z",
+    "fecha": "2026-09-10",
+    "sede": "FOTON VILLAVICENCIO",
+    "sedeCodigo": "KTVIL",
+    "ubicacionFisica": "KTVIL",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "ESTANDAR",
+    "serial": "8CC3151BHH",
+    "etiqueta": "0042437"
+  }
+]

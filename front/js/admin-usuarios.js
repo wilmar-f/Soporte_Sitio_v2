@@ -32,7 +32,13 @@ function renderRows(tecnicos) {
   `).join('');
 }
 
+function panelSigueUsuarios() {
+  const panel = document.getElementById('panel-principal');
+  return panel && panel.dataset.panelActivo === 'usuarios';
+}
+
 async function loadAndRender() {
+  if (!panelSigueUsuarios()) return;
   const tbody = document.getElementById('admin-usuarios-tbody');
   const meta = document.getElementById('admin-usuarios-meta');
   if (!tbody) return;
@@ -86,6 +92,7 @@ export async function renderPanelUsuarios(token) {
   state = { q: '', token: token || '' };
 
   const panel = document.getElementById('panel-principal');
+  panel.dataset.panelActivo = 'usuarios';
   panel.innerHTML = `
     <div class="noticias-panel admin-usuarios-panel">
       <div class="noticias-header">

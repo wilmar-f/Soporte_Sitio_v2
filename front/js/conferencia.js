@@ -1,35 +1,26 @@
 import { renderBanner } from './banner.js';
 import { toast } from './toast.js';
-import { logoutOffice365 } from './auth-office365.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
 import { esRolAdministrador } from './noticias.js';
-import { leer as leerSesion, cerrar as cerrarSesionStorage, escucharCierreEnOtrasPestanas } from './sesion.js';
+import {
+  resolverSesion,
+  cerrar as cerrarSesionStorage,
+  escucharCierreEnOtrasPestanas,
+  iniciarVigilanciaInactividad,
+} from './sesion.js';
 
-const { loginType, token: tokenGuardado, usuario: usuarioGuardado, o365session: o365Guardado } = leerSesion();
+const { token: tokenGuardado, usuario: usuarioGuardado } = await resolverSesion();
 
-const sesionValida =
-  (loginType === 'admin' && tokenGuardado && usuarioGuardado) ||
-  (loginType === 'office365' && o365Guardado);
+const sesionValida = Boolean(tokenGuardado && usuarioGuardado);
 
 if (!sesionValida) {
   window.location.replace('/pages/index.html');
 } else {
   escucharCierreEnOtrasPestanas();
+  iniciarVigilanciaInactividad();
 }
 
-let usuarioActual;
-if (loginType === 'office365') {
-  const o365 = JSON.parse(o365Guardado);
-  usuarioActual = {
-    nombreCompleto: o365.nombreCompleto,
-    correo: o365.correo,
-    rol: 'Técnico Office 365',
-    fotoPerfil: o365.fotoPerfil || null,
-    loginType: 'office365',
-  };
-} else {
-  usuarioActual = { ...JSON.parse(usuarioGuardado), loginType: 'admin' };
-}
+const usuarioActual = { ...JSON.parse(usuarioGuardado), loginType: 'admin' };
 
 let catalogo = [];
 let imagenBase64 = '';
@@ -69,17 +60,7 @@ function renderInfoUsuario() {
   }
 
   const avatarEl = document.getElementById('user-avatar');
-  const inicial = (nombre || 'U').charAt(0).toUpperCase();
-  if (usuarioActual.fotoPerfil) {
-    const img = document.createElement('img');
-    img.src = usuarioActual.fotoPerfil;
-    img.alt = '';
-    img.onerror = () => { avatarEl.textContent = inicial; };
-    avatarEl.innerHTML = '';
-    avatarEl.appendChild(img);
-  } else {
-    avatarEl.textContent = inicial;
-  }
+  avatarEl.textContent = (nombre || 'U').charAt(0).toUpperCase();
 
   const esAdmin = esRolAdministrador(usuarioActual.rol);
   setSidebarBtnVisible(document.getElementById('btn-noticias'), esAdmin);
@@ -301,9 +282,6 @@ async function subirFoto(reemplazar = false) {
 }
 
 function cerrarSesion() {
-  if (usuarioActual.loginType === 'office365') {
-    logoutOffice365();
-  }
   cerrarSesionStorage();
   toast('Su sesión ha sido cerrada con éxito.', 'exito');
   setTimeout(() => window.location.replace('/pages/index.html'), 1400);
@@ -311,7 +289,7 @@ function cerrarSesion() {
 
 function registrarEventos() {
   document.getElementById('btn-diagnostico').addEventListener('click', () => {
-    window.location.href = '/pages/usuario.html';
+    window.location.href = '/pages/usuario.html?panel=diagnostico';
   });
   document.getElementById('btn-noticias')?.addEventListener('click', () => irAPanelUsuario('noticias'));
   document.getElementById('btn-estadisticas')?.addEventListener('click', () => irAPanelUsuario('estadisticas'));

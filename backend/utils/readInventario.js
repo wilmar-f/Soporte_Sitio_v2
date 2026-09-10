@@ -7,9 +7,27 @@ let cache = null;
 
 const HEADER_MAP = {
   serial: ['nº serie', 'n° serie', 'no serie', 'numero serie', 'número serie', 'serial', 'n serie'],
-  etiqueta: ['etiqueta'],
+  etiqueta: ['etiqueta', 'placa', 'etiqueta o placa'],
   fabricante: ['fabricante', 'marca'],
   modelo: ['modelo'],
+  procesador: ['procesador', 'cpu', 'processador'],
+  versionSO: ['version so', 'versión so', 'version_so', 'version del so', 'versión del so', 'os version'],
+  ram: ['ram', 'memoria ram', 'memoria'],
+  nombreEquipo: [
+    'nombre del equipo',
+    'nombre equipo',
+    'nombre_equipo',
+    'nombre e',
+    'hostname',
+    'nombre de equipo',
+  ],
+  sistemaOperativo: [
+    'sistema operativo',
+    'sistema_operativo',
+    'sistema o',
+    'sistema operat',
+  ],
+  hd: ['hd', 'hd(gb)', 'hd gb', 'hdgb', 'disco', 'disco duro', 'almacenamiento', 'hdd', 'ssd'],
 };
 
 function getInventarioPath() {
@@ -21,7 +39,9 @@ function normalizeHeader(value) {
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ');
 }
 
 function serialFromNumber(n) {
@@ -72,13 +92,32 @@ function mapRow(rawRow) {
   };
 
   const serial = normalizeSerial(pickRaw(HEADER_MAP.serial));
-  if (!serial) return { serial: '', etiqueta: '', fabricante: '', modelo: '' };
+  if (!serial) {
+    return {
+      serial: '',
+      etiqueta: '',
+      fabricante: '',
+      modelo: '',
+      procesador: '',
+      versionSO: '',
+      ram: '',
+      nombreEquipo: '',
+      sistemaOperativo: '',
+      hd: '',
+    };
+  }
 
   return {
     serial,
     etiqueta: clipField(pick(HEADER_MAP.etiqueta), 32),
     fabricante: clipField(pick(HEADER_MAP.fabricante), 64),
     modelo: clipField(pick(HEADER_MAP.modelo), 128),
+    procesador: clipField(pick(HEADER_MAP.procesador), 128),
+    versionSO: clipField(pick(HEADER_MAP.versionSO), 64),
+    ram: clipField(pick(HEADER_MAP.ram), 32),
+    nombreEquipo: clipField(pick(HEADER_MAP.nombreEquipo), 128),
+    sistemaOperativo: clipField(pick(HEADER_MAP.sistemaOperativo), 64),
+    hd: clipField(pick(HEADER_MAP.hd), 32),
   };
 }
 

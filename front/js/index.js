@@ -4,14 +4,18 @@
 import { renderBanner }       from './banner.js';
 import { toast }              from './toast.js';
 import { registrarUltimoAcceso } from './ultimo-acceso.js';
-import { haySesion, guardar } from './sesion.js';
+import { haySesion, guardar, resolverSesion } from './sesion.js';
 
 // Inicializar banner
 renderBanner();
 
-// Si ya hay sesión activa (admin o Office 365), redirigir directamente
 if (haySesion()) {
   window.location.replace('/pages/usuario.html');
+} else {
+  resolverSesion().then((s) => {
+    const ok = Boolean(s.token && s.usuario);
+    if (ok) window.location.replace('/pages/usuario.html');
+  });
 }
 
 const form        = document.getElementById('login-form');

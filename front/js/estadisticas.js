@@ -61,7 +61,13 @@ function bindFilters() {
   });
 }
 
+function panelSigueEstadisticas() {
+  const panel = document.getElementById('panel-principal');
+  return panel && panel.dataset.panelActivo === 'estadisticas';
+}
+
 async function loadAndRender() {
+  if (!panelSigueEstadisticas()) return;
   const qs = new URLSearchParams({
     page: String(state.page),
     limit: String(PAGE_SIZE),
@@ -83,6 +89,7 @@ async function loadAndRender() {
       toast(data.error || 'No se pudieron cargar las estadísticas.', 'error');
       return;
     }
+    if (!panelSigueEstadisticas()) return;
 
     fillSelect(
       'stats-sede',
@@ -148,6 +155,7 @@ export async function renderPanelEstadisticas(token) {
   state = { token: token || '', desde: '', hasta: '', sede: '', tecnico: '', page: 1 };
 
   const panel = document.getElementById('panel-principal');
+  panel.dataset.panelActivo = 'estadisticas';
   panel.innerHTML = `
     <div class="stats-panel dash-panel" id="stats-panel">
       <div class="noticias-header">

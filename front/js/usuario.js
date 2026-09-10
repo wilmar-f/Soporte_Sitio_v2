@@ -9,8 +9,13 @@
  */
 import { renderBanner }      from './banner.js';
 import { toast }             from './toast.js';
-import { logoutOffice365 }   from './auth-office365.js';
-import { leer as leerSesion, cerrar as cerrarSesionStorage, escucharCierreEnOtrasPestanas } from './sesion.js';
+import {
+  resolverSesion,
+  leer as leerSesion,
+  cerrar as cerrarSesionStorage,
+  escucharCierreEnOtrasPestanas,
+  iniciarVigilanciaInactividad,
+} from './sesion.js';
 import {
   renderDiagnosticoInteractivo,
   initDiagnosticoInteractivo,
@@ -28,34 +33,41 @@ let evidenciasAdjuntas = [];
 /* ══════════════════════════════════════════════════════
    1. VERIFICACIÓN DE SESIÓN
    ══════════════════════════════════════════════════════ */
-const { loginType, token: tokenGuardado, usuario: usuarioGuardado, o365session: o365Guardado } = leerSesion();
+const { token: tokenGuardado, usuario: usuarioGuardado } = await resolverSesion();
 
-const sesionValida =
-  (loginType === 'admin'    && tokenGuardado  && usuarioGuardado) ||
-  (loginType === 'office365' && o365Guardado);
+const sesionValida = Boolean(tokenGuardado && usuarioGuardado);
 
 if (!sesionValida) {
   window.location.replace('/pages/index.html');
 } else {
   escucharCierreEnOtrasPestanas();
+  iniciarVigilanciaInactividad();
 }
 
-// Normalizar datos del usuario para uso unificado en toda la página
-let usuarioActual;
-if (loginType === 'office365') {
-  const o365 = JSON.parse(o365Guardado);
-  usuarioActual = {
-    nombreCompleto : o365.nombreCompleto,
-    correo         : o365.correo,
-    rol            : 'Técnico Office 365',
-    fotoPerfil     : o365.fotoPerfil  || null,
-    cedulaTecnico  : o365.cedulaTecnico || '',
-    cargoTecnico   : o365.cargoTecnico  || null,
-    loginType      : 'office365',
-  };
-} else {
-  usuarioActual = { ...JSON.parse(usuarioGuardado), loginType: 'admin' };
+function parseJsonSeguro(raw, fallback = null) {
+  if (raw == null || raw === '') return fallback;
+  if (typeof raw === 'object') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
 }
+
+function usuarioDesdeSesion(sesion) {
+  const admin = parseJsonSeguro(sesion?.usuario, {}) || {};
+  return {
+    cedula: admin.cedula || '',
+    nombreCompleto: admin.nombreCompleto || admin.nombre || '',
+    cargo: admin.cargo || '',
+    rol: admin.rol || '',
+    loginType: 'admin',
+  };
+}
+
+let usuarioActual = usuarioDesdeSesion({
+  usuario: usuarioGuardado,
+});
 
 function esAdministrador() {
   return esRolAdministrador(usuarioActual.rol);
@@ -261,9 +273,6 @@ function toTitleCase(str) {
 }
 
 function obtenerCargoUsuario() {
-  if (usuarioActual.loginType === 'office365') {
-    return usuarioActual.cargoTecnico || usuarioActual.rol || '';
-  }
   return usuarioActual.cargo || usuarioActual.rol || '';
 }
 
@@ -282,7 +291,7 @@ function renderUltimoAccesoSidebar() {
 }
 
 function renderInfoUsuario() {
-  const { nombreCompleto, correo, fotoPerfil, loginType: tipo } = usuarioActual;
+  const { nombreCompleto, correo } = usuarioActual;
   const cargo = toTitleCase(obtenerCargoUsuario());
 
   document.getElementById('user-nombre').textContent = nombreCompleto || '—';
@@ -291,23 +300,7 @@ function renderInfoUsuario() {
   renderUltimoAccesoSidebar();
 
   const avatarEl = document.getElementById('user-avatar');
-  const inicial  = (nombreCompleto || 'U').charAt(0).toUpperCase();
-
-  if (tipo === 'office365' && fotoPerfil) {
-    // Mostrar foto de perfil O365 — fallback silencioso a la inicial si falla la carga
-    const img = document.createElement('img');
-    img.src    = fotoPerfil;
-    img.alt    = 'Foto de perfil';
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
-    img.onerror = () => {
-      avatarEl.innerHTML = '';
-      avatarEl.textContent = inicial;
-    };
-    avatarEl.innerHTML = '';
-    avatarEl.appendChild(img);
-  } else {
-    avatarEl.textContent = inicial;
-  }
+  avatarEl.textContent = (nombreCompleto || 'U').charAt(0).toUpperCase();
 
   const btnNoticias = document.getElementById('btn-noticias');
   setSidebarBtnVisible(btnNoticias, esAdministrador());
@@ -372,8 +365,10 @@ async function cargarDatosIniciales() {
    5. EVENTOS DEL SIDEBAR
    ══════════════════════════════════════════════════════ */
 function registrarEventosSidebar() {
-  document.getElementById('btn-diagnostico').addEventListener('click', () => {
+  document.getElementById('btn-diagnostico').addEventListener('click', (e) => {
+    e.preventDefault();
     activarBotonSidebar('btn-diagnostico');
+    setPanelActivo('diagnostico');
     renderFormularioDiagnostico();
   });
 
@@ -381,6 +376,7 @@ function registrarEventosSidebar() {
   if (btnNoticias && esAdministrador()) {
     btnNoticias.addEventListener('click', () => {
       activarBotonSidebar('btn-noticias');
+      setPanelActivo('noticias');
       renderPanelNoticias(tokenGuardado);
     });
   }
@@ -389,6 +385,7 @@ function registrarEventosSidebar() {
   if (btnEstadisticas && esAdministrador()) {
     btnEstadisticas.addEventListener('click', () => {
       activarBotonSidebar('btn-estadisticas');
+      setPanelActivo('estadisticas');
       renderPanelEstadisticas(tokenGuardado);
     });
   }
@@ -397,6 +394,7 @@ function registrarEventosSidebar() {
   if (btnUsuarios && esAdministrador()) {
     btnUsuarios.addEventListener('click', () => {
       activarBotonSidebar('btn-usuarios');
+      setPanelActivo('usuarios');
       renderPanelUsuarios(tokenGuardado);
     });
   }
@@ -424,20 +422,35 @@ function abrirPanelDesdeQuery() {
 
   history.replaceState(null, '', window.location.pathname);
 
+  if (panel === 'diagnostico') {
+    activarBotonSidebar('btn-diagnostico');
+    setPanelActivo('diagnostico');
+    renderFormularioDiagnostico();
+    return;
+  }
+
   if (panel === 'noticias' && esAdministrador()) {
     activarBotonSidebar('btn-noticias');
+    setPanelActivo('noticias');
     renderPanelNoticias(tokenGuardado);
     return;
   }
   if (panel === 'estadisticas' && esAdministrador()) {
     activarBotonSidebar('btn-estadisticas');
+    setPanelActivo('estadisticas');
     renderPanelEstadisticas(tokenGuardado);
     return;
   }
   if (panel === 'usuarios' && esAdministrador()) {
     activarBotonSidebar('btn-usuarios');
+    setPanelActivo('usuarios');
     renderPanelUsuarios(tokenGuardado);
   }
+}
+
+function setPanelActivo(nombre) {
+  const panel = document.getElementById('panel-principal');
+  if (panel) panel.dataset.panelActivo = nombre;
 }
 
 function activarBotonSidebar(idActivo) {
@@ -447,9 +460,6 @@ function activarBotonSidebar(idActivo) {
 }
 
 function cerrarSesion() {
-  if (usuarioActual.loginType === 'office365') {
-    logoutOffice365();
-  }
   cerrarSesionStorage();
   toast('Su sesión ha sido cerrada con éxito.', 'exito');
   setTimeout(() => window.location.replace('/pages/index.html'), 1400);
@@ -486,8 +496,18 @@ function buscarEquipoPorSerial(serial) {
 }
 
 /** Marca inputs de equipo como solo lectura (autocompletados por serial). */
+const CAMPOS_EQUIPO_SERIAL = [
+  'marca', 'modelo', 'etiqueta',
+  'procesador', 'version-so', 'ram', 'nombre-equipo', 'sistema-operativo', 'hd',
+];
+
+function valorONoAplica(value) {
+  const s = String(value ?? '').trim();
+  return s || 'No Aplica';
+}
+
 function bloquearCamposEquipo() {
-  ['marca', 'modelo', 'etiqueta'].forEach(id => {
+  CAMPOS_EQUIPO_SERIAL.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.readOnly = true;
@@ -498,7 +518,7 @@ function bloquearCamposEquipo() {
 
 /** Limpia Marca, Modelo y Etiqueta tras cambio o serial no encontrado. */
 function limpiarCamposEquipo() {
-  ['marca', 'modelo', 'etiqueta'].forEach(id => {
+  CAMPOS_EQUIPO_SERIAL.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -544,8 +564,14 @@ async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) 
   document.getElementById('marca').value    = (equipo.fabricante || '').toUpperCase();
   document.getElementById('modelo').value   = (equipo.modelo || '').toUpperCase();
   document.getElementById('etiqueta').value = equipo.etiqueta || '';
+  document.getElementById('procesador').value = valorONoAplica(equipo.procesador);
+  document.getElementById('version-so').value = valorONoAplica(equipo.versionSO);
+  document.getElementById('ram').value = valorONoAplica(equipo.ram);
+  document.getElementById('nombre-equipo').value = valorONoAplica(equipo.nombreEquipo);
+  document.getElementById('sistema-operativo').value = valorONoAplica(equipo.sistemaOperativo);
+  document.getElementById('hd').value = valorONoAplica(equipo.hd);
 
-  ['marca', 'modelo', 'etiqueta', 'serial'].forEach(id => {
+  ['marca', 'modelo', 'etiqueta', 'serial', ...CAMPOS_EQUIPO_SERIAL].forEach(id => {
     const el = document.getElementById(id);
     if (el) limpiarInvalido(el);
   });
@@ -559,6 +585,7 @@ async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) 
 
 function renderFormularioDiagnostico() {
   const panel = document.getElementById('panel-principal');
+  setPanelActivo('diagnostico');
 
   const hoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -619,7 +646,7 @@ function renderFormularioDiagnostico() {
           </div>
           <div class="campo">
             <label for="marca">Marca *</label>
-            <input type="text" id="marca" name="marca" placeholder="Se autocompleta por serial" readonly required style="text-transform:uppercase;">
+            <input type="text" id="marca" name="marca" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="serial">Serial *</label>
@@ -627,7 +654,7 @@ function renderFormularioDiagnostico() {
           </div>
           <div class="campo">
             <label for="modelo">Modelo *</label>
-            <input type="text" id="modelo" name="modelo" placeholder="Se autocompleta por serial" readonly required style="text-transform:uppercase;">
+            <input type="text" id="modelo" name="modelo" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="etiqueta">Etiqueta o Placa *</label>
@@ -635,47 +662,23 @@ function renderFormularioDiagnostico() {
           </div>
           <div class="campo">
             <label for="procesador">Procesador *</label>
-            <select id="procesador" name="procesador" required>
-              <option value="">— Selecciona —</option>
-              <option>INTEL CORE i5</option>
-              <option>INTEL CORE i7</option>
-              <option>INTEL CORE i9</option>
-              <option>No Aplica</option>
-            </select>
+            <input type="text" id="procesador" name="procesador" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="version-so">Versión SO *</label>
-            <select id="version-so" name="versionSO" required>
-              <option value="">— Selecciona —</option>
-              <option>25H2</option>
-              <option>24H2</option>
-              <option>26H1</option>
-              <option>No Aplica</option>
-            </select>
+            <input type="text" id="version-so" name="versionSO" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="ram">RAM *</label>
-            <select id="ram" name="ram" required>
-              <option value="">— Selecciona —</option>
-              <option>8 GB</option>
-              <option>16 GB</option>
-              <option>24 GB</option>
-              <option>32 GB</option>
-              <option>No Aplica</option>
-            </select>
+            <input type="text" id="ram" name="ram" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="nombre-equipo">Nombre del equipo *</label>
-            <input type="text" id="nombre-equipo" name="nombreEquipo" placeholder="Ej: DESK-ADMON-01" required>
+            <input type="text" id="nombre-equipo" name="nombreEquipo" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="sistema-operativo">Sistema Operativo *</label>
-            <select id="sistema-operativo" name="sistemaOperativo" required>
-              <option value="">— Selecciona —</option>
-              <option>WIN 11 PRO</option>
-              <option>LINUX SUSE 15</option>
-              <option>No Aplica</option>
-            </select>
+            <input type="text" id="sistema-operativo" name="sistemaOperativo" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="version-office">Versión de Office *</label>
@@ -687,13 +690,7 @@ function renderFormularioDiagnostico() {
           </div>
           <div class="campo">
             <label for="hd">HD *</label>
-            <select id="hd" name="hd" required>
-              <option value="">— Selecciona —</option>
-              <option>256 GB</option>
-              <option>512 GB</option>
-              <option>1 TB</option>
-              <option>No Aplica</option>
-            </select>
+            <input type="text" id="hd" name="hd" placeholder="Se autocompleta por serial" readonly required>
           </div>
         </div>
       </fieldset>
@@ -787,6 +784,7 @@ function renderFormularioDiagnostico() {
   bloquearCamposEquipo();
   initEvidenciasInput();
   autocompletarDatosTecnico();
+  requestAnimationFrame(() => autocompletarDatosTecnico());
 }
 
 /* ══════════════════════════════════════════════════════
@@ -958,38 +956,31 @@ function limpiarInvalido(el) {
 }
 
 /* ══════════════════════════════════════════════════════
-   AUTOCOMPLETADO DATOS TÉCNICO (Excel / Office 365)
+   AUTOCOMPLETADO DATOS TÉCNICO
    ══════════════════════════════════════════════════════ */
 
 function bloquearCampoTecnico(id, valor, bloquear) {
   const el = document.getElementById(id);
-  if (!el || !bloquear) return;
+  if (!el) return;
   el.value = valor ?? '';
-  el.readOnly = true;
-  el.style.background = 'var(--color-gris-fondo, #f5f5f5)';
-  el.style.cursor = 'default';
+  if (bloquear) {
+    el.readOnly = true;
+    el.style.background = 'var(--color-gris-fondo, #f5f5f5)';
+    el.style.cursor = 'default';
+  }
 }
 
 /**
  * Autocompleta y bloquea nombre, cédula y cargo del técnico según sesión.
  */
 function autocompletarDatosTecnico() {
-  let campos = [];
+  usuarioActual = usuarioDesdeSesion(leerSesion());
 
-  if (usuarioActual.loginType === 'office365') {
-    const { nombreCompleto, cedulaTecnico, cargoTecnico } = usuarioActual;
-    campos = [
-      { id: 'nombre-tecnico', valor: nombreCompleto, bloquear: !!nombreCompleto },
-      { id: 'cedula-tecnico', valor: cedulaTecnico, bloquear: !!cedulaTecnico },
-      { id: 'cargo-tecnico', valor: cargoTecnico, bloquear: !!cargoTecnico },
-    ];
-  } else if (usuarioActual.loginType === 'admin') {
-    campos = [
-      { id: 'nombre-tecnico', valor: usuarioActual.nombreCompleto || '', bloquear: true },
-      { id: 'cedula-tecnico', valor: usuarioActual.cedula || '', bloquear: true },
-      { id: 'cargo-tecnico', valor: usuarioActual.cargo || '', bloquear: true },
-    ];
-  }
+  const campos = [
+    { id: 'nombre-tecnico', valor: usuarioActual.nombreCompleto || '', bloquear: true },
+    { id: 'cedula-tecnico', valor: usuarioActual.cedula || '', bloquear: true },
+    { id: 'cargo-tecnico', valor: usuarioActual.cargo || '', bloquear: true },
+  ];
 
   campos.forEach(({ id, valor, bloquear }) => {
     bloquearCampoTecnico(id, valor ?? '', bloquear);
@@ -1200,6 +1191,33 @@ function obtenerFirmaBase64() {
   return '';
 }
 
+function esNoAplicaDato(val) {
+  const s = String(val ?? '').trim();
+  return !s || /^no\s*aplica$/i.test(s);
+}
+
+function parseNumeroDato(val) {
+  const n = parseFloat(String(val ?? '').replace(',', '.').replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function formatearRamPdf(val) {
+  const raw = String(val ?? '').trim();
+  if (esNoAplicaDato(raw)) return raw || 'No Aplica';
+  const n = parseNumeroDato(raw);
+  if (!Number.isFinite(n)) return raw;
+  if (/gb/i.test(raw) || n < 256) return `${Math.round(n)} GB`;
+  return `${Math.round(n / 1024)} GB`;
+}
+
+function formatearHdPdf(val) {
+  const raw = String(val ?? '').trim();
+  if (esNoAplicaDato(raw)) return raw || 'No Aplica';
+  const n = parseNumeroDato(raw);
+  if (!Number.isFinite(n)) return raw;
+  return `${Math.round(n)} GB`;
+}
+
 function recopilarValores() {
   const get = (id) => {
     const el = document.getElementById(id);
@@ -1221,11 +1239,11 @@ function recopilarValores() {
     etiqueta:          get('etiqueta'),
     procesador:        get('procesador'),
     versionSO:         get('version-so'),
-    ram:               get('ram'),
+    ram:               formatearRamPdf(get('ram')),
     nombreEquipo:      get('nombre-equipo'),
     sistemaOperativo:  get('sistema-operativo'),
     versionOffice:     get('version-office'),
-    hd:                get('hd'),
+    hd:                formatearHdPdf(get('hd')),
     appsMayorUso:      get('apps-mayor-uso'),
     appsFueraEstandar: get('apps-fuera-estandar'),
     descripcionFalla:  get('descripcion-falla'),
