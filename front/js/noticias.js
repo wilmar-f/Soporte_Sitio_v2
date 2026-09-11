@@ -17,6 +17,7 @@ const TIPOS_LABEL = {
   GESTOR_GARANTIAS: 'DIAGNOSTICO CON GESTOR GARANTIAS',
   RENOVACION: 'DIAGNOSTICO RENOVACION',
   DAAS: 'DAAS',
+  BETA: 'DIAGNOSTICO BETA',
 };
 
 const PAGE_SIZE = 10;
@@ -53,6 +54,7 @@ function buildTipoOptions(selected) {
     { value: 'GESTOR_GARANTIAS', label: 'DIAGNOSTICO CON GESTOR GARANTIAS' },
     { value: 'RENOVACION', label: 'DIAGNOSTICO RENOVACION' },
     { value: 'DAAS', label: 'DAAS' },
+    { value: 'BETA', label: 'DIAGNOSTICO BETA' },
   ];
   return opts.map(o =>
     `<option value="${o.value}" ${selected === o.value ? 'selected' : ''}>${o.label}</option>`

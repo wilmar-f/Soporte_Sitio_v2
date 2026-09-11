@@ -13,6 +13,7 @@ const diagnosticosRoutes = require('./routes/diagnosticos');
 const adminRoutes = require('./routes/admin');
 const videoconferenciaRoutes = require('./routes/videoconferencia');
 const estadisticasRoutes = require('./routes/estadisticas');
+const redactarRoutes = require('./routes/redactar');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,7 @@ app.use('/api', diagnosticosRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', videoconferenciaRoutes);
 app.use('/api', estadisticasRoutes);
+app.use('/api', redactarRoutes);
 
 // Root redirect to login page
 app.get('/', (req, res) => {

@@ -37,5 +37,31 @@
     "tipoDiagnostico": "ESTANDAR",
     "serial": "8CC3151BHH",
     "etiqueta": "0042437"
+  },
+  {
+    "id": "61bf11ee-762e-453d-9d83-ccb5c7d45f2e",
+    "createdAt": "2026-09-10T23:08:17.090Z",
+    "fecha": "2026-09-10",
+    "sede": "ADMON CENTRAL ALKOSTO AV 68",
+    "sedeCodigo": "AKB68",
+    "ubicacionFisica": "AKEDE",
+    "nombreTecnico": "Administrador",
+    "cedulaTecnico": "1",
+    "tipoDiagnostico": "BETA",
+    "serial": "8CC3151BHH",
+    "etiqueta": "0042437"
+  },
+  {
+    "id": "a747c682-671d-4967-8c9c-6b7029bf2b2a",
+    "createdAt": "2026-09-10T23:56:03.334Z",
+    "fecha": "2026-09-10",
+    "sede": "ADMON CENTRAL ALKOMPRAR",
+    "sedeCodigo": "ALNI1",
+    "ubicacionFisica": "AKB68",
+    "nombreTecnico": "Administrador",
+    "cedulaTecnico": "1",
+    "tipoDiagnostico": "BETA",
+    "serial": "1HF5110TR8",
+    "etiqueta": "0049552"
   }
 ]

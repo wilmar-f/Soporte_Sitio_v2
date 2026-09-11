@@ -66,6 +66,7 @@ function renderInfoUsuario() {
   setSidebarBtnVisible(document.getElementById('btn-noticias'), esAdmin);
   setSidebarBtnVisible(document.getElementById('btn-estadisticas'), esAdmin);
   setSidebarBtnVisible(document.getElementById('btn-usuarios'), esAdmin);
+  setSidebarBtnVisible(document.getElementById('btn-diagnostico-beta'), esAdmin);
 }
 
 function setSidebarBtnVisible(btn, visible) {
@@ -290,6 +291,9 @@ function cerrarSesion() {
 function registrarEventos() {
   document.getElementById('btn-diagnostico').addEventListener('click', () => {
     window.location.href = '/pages/usuario.html?panel=diagnostico';
+  });
+  document.getElementById('btn-diagnostico-beta')?.addEventListener('click', () => {
+    irAPanelUsuario('diagnostico-beta');
   });
   document.getElementById('btn-noticias')?.addEventListener('click', () => irAPanelUsuario('noticias'));
   document.getElementById('btn-estadisticas')?.addEventListener('click', () => irAPanelUsuario('estadisticas'));

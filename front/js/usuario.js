@@ -251,6 +251,7 @@ let datosInventario = [];  // [{serial, etiqueta, fabricante, modelo}]
 let inventarioListo = Promise.resolve();
 let recargaInventarioEnVuelo = null;
 let busquedaSerialGen = 0;
+let modoFormulario = 'clasico';
 
 /* ══════════════════════════════════════════════════════
    4. INICIALIZACIÓN
@@ -310,6 +311,9 @@ function renderInfoUsuario() {
 
   const btnUsuarios = document.getElementById('btn-usuarios');
   setSidebarBtnVisible(btnUsuarios, esAdministrador());
+
+  const btnDiagnosticoBeta = document.getElementById('btn-diagnostico-beta');
+  setSidebarBtnVisible(btnDiagnosticoBeta, esAdministrador());
 }
 
 /* ── Carga datos maestros al iniciar ───────────────── */
@@ -372,6 +376,16 @@ function registrarEventosSidebar() {
     renderFormularioDiagnostico();
   });
 
+  const btnDiagnosticoBeta = document.getElementById('btn-diagnostico-beta');
+  if (btnDiagnosticoBeta && esAdministrador()) {
+    btnDiagnosticoBeta.addEventListener('click', (e) => {
+      e.preventDefault();
+      activarBotonSidebar('btn-diagnostico-beta');
+      setPanelActivo('diagnostico-beta');
+      renderFormularioDiagnostico('beta');
+    });
+  }
+
   const btnNoticias = document.getElementById('btn-noticias');
   if (btnNoticias && esAdministrador()) {
     btnNoticias.addEventListener('click', () => {
@@ -429,6 +443,14 @@ function abrirPanelDesdeQuery() {
     return;
   }
 
+  if (panel === 'diagnostico-beta') {
+    if (!esAdministrador()) return;
+    activarBotonSidebar('btn-diagnostico-beta');
+    setPanelActivo('diagnostico-beta');
+    renderFormularioDiagnostico('beta');
+    return;
+  }
+
   if (panel === 'noticias' && esAdministrador()) {
     activarBotonSidebar('btn-noticias');
     setPanelActivo('noticias');
@@ -451,6 +473,23 @@ function abrirPanelDesdeQuery() {
 function setPanelActivo(nombre) {
   const panel = document.getElementById('panel-principal');
   if (panel) panel.dataset.panelActivo = nombre;
+}
+
+function mostrarPantallaBienvenida() {
+  evidenciasAdjuntas = [];
+  modoFormulario = 'clasico';
+  const panel = document.getElementById('panel-principal');
+  if (!panel) return;
+  panel.innerHTML = `
+      <div class="panel-bienvenida" id="panel-bienvenida">
+        <div class="panel-bienvenida__icono">📋</div>
+        <h2>Panel de Diagnóstico</h2>
+        <p>Haz clic en <strong>Diagnóstico</strong> en el menú lateral para abrir el formulario.</p>
+      </div>
+  `;
+  setPanelActivo('bienvenida');
+  document.getElementById('btn-diagnostico')?.classList.remove('sidebar__btn--activo');
+  document.getElementById('btn-diagnostico-beta')?.classList.remove('sidebar__btn--activo');
 }
 
 function activarBotonSidebar(idActivo) {
@@ -583,9 +622,75 @@ async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) 
    7. RENDERIZADO DEL FORMULARIO DINÁMICO
    ══════════════════════════════════════════════════════ */
 
-function renderFormularioDiagnostico() {
+function seccionDiagnosticoClasico() {
+  return `
+      <fieldset class="seccion">
+        <legend>Diagnóstico</legend>
+        ${renderDiagnosticoInteractivo()}
+      </fieldset>
+  `;
+}
+
+function bloqueTextareaConIA({ textareaId, previewId, label, name, placeholder, contexto }) {
+  return `
+        <div class="campo campo-full">
+          <label for="${textareaId}">${label} *</label>
+          <textarea id="${textareaId}" name="${name}" rows="4" required
+            placeholder="${placeholder}"></textarea>
+          <button type="button" class="btn btn--outline btn-mejorar-ia"
+            data-textarea="${textareaId}" data-preview="${previewId}" data-contexto="${esc(contexto)}">
+            Mejorar con IA
+          </button>
+          <p class="ia-preview-label">Vista previa</p>
+          <div class="ia-preview" id="${previewId}" data-ia-ready="0" aria-live="polite"></div>
+        </div>
+  `;
+}
+
+function seccionDiagnosticoBeta() {
+  return `
+      <fieldset class="seccion">
+        <legend>DESCRIBA LA FALLA QUE PRESENTA EL EQUIPO</legend>
+        ${bloqueTextareaConIA({
+          textareaId: 'descripcion-falla',
+          previewId: 'ia-preview-descripcion-falla',
+          label: 'Descripción de la falla',
+          name: 'descripcionFalla',
+          placeholder: 'Describa la falla que presenta el equipo',
+          contexto: 'DESCRIBA LA FALLA QUE PRESENTA EL EQUIPO',
+        })}
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>ACCIONES REALIZADAS PARA TRATAR DE SOLUCIONAR LA FALLA</legend>
+        ${bloqueTextareaConIA({
+          textareaId: 'acciones-realizadas',
+          previewId: 'ia-preview-acciones-realizadas',
+          label: 'Acciones realizadas',
+          name: 'accionesRealizadas',
+          placeholder: 'Describa las acciones realizadas para tratar de solucionar la falla',
+          contexto: 'ACCIONES REALIZADAS PARA TRATAR DE SOLUCIONAR LA FALLA',
+        })}
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>DESCRIBA EL DIAGNOSTICO LUEGO DE LAS ACCIONES REALIZADAS</legend>
+        ${bloqueTextareaConIA({
+          textareaId: 'diagnostico-final',
+          previewId: 'ia-preview-diagnostico-final',
+          label: 'Diagnóstico',
+          name: 'diagnosticoFinal',
+          placeholder: 'Describa el diagnóstico luego de las acciones realizadas',
+          contexto: 'DESCRIBA EL DIAGNOSTICO LUEGO DE LAS ACCIONES REALIZADAS',
+        })}
+      </fieldset>
+  `;
+}
+
+function renderFormularioDiagnostico(modo = 'clasico') {
+  modoFormulario = modo === 'beta' ? 'beta' : 'clasico';
   const panel = document.getElementById('panel-principal');
-  setPanelActivo('diagnostico');
+  setPanelActivo(modoFormulario === 'beta' ? 'diagnostico-beta' : 'diagnostico');
 
   const hoy = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -601,7 +706,7 @@ function renderFormularioDiagnostico() {
 
   panel.innerHTML = `
     <form id="form-diagnostico" class="formulario-diagnostico" novalidate>
-      <h2>Formulario de Diagnóstico - Soporte en Sitio</h2>
+      <h2>${modoFormulario === 'beta' ? 'Formulario de Diagnóstico Beta' : 'Formulario de Diagnóstico - Soporte en Sitio'}</h2>
 
       <!-- ═══════════ SECCIÓN: INFORMACIÓN GENERAL ═════════════ -->
       <fieldset class="seccion">
@@ -710,11 +815,7 @@ function renderFormularioDiagnostico() {
         </div>
       </fieldset>
 
-      <!-- ═══════════ SECCIÓN: DIAGNÓSTICO ══════════════════════ -->
-      <fieldset class="seccion">
-        <legend>Diagnóstico</legend>
-        ${renderDiagnosticoInteractivo()}
-      </fieldset>
+      ${modoFormulario === 'beta' ? seccionDiagnosticoBeta() : seccionDiagnosticoClasico()}
 
       <!-- ═══════════ SECCIÓN: EVIDENCIAS (opcional) ═══════════ -->
       <fieldset class="seccion">
@@ -787,6 +888,93 @@ function renderFormularioDiagnostico() {
   requestAnimationFrame(() => autocompletarDatosTecnico());
 }
 
+const CAMPOS_IA_BETA = [
+  { textareaId: 'descripcion-falla', previewId: 'ia-preview-descripcion-falla', nombre: 'Vista previa de la falla' },
+  { textareaId: 'acciones-realizadas', previewId: 'ia-preview-acciones-realizadas', nombre: 'Vista previa de las acciones' },
+  { textareaId: 'diagnostico-final', previewId: 'ia-preview-diagnostico-final', nombre: 'Vista previa del diagnóstico' },
+];
+
+function limpiarPreviewIA(preview) {
+  if (!preview) return;
+  preview.textContent = '';
+  preview.dataset.iaReady = '0';
+  preview.classList.remove('invalido');
+}
+
+function limpiarPreviewsIA() {
+  CAMPOS_IA_BETA.forEach(({ previewId }) => {
+    limpiarPreviewIA(document.getElementById(previewId));
+  });
+}
+
+function textoPreviewIA(previewId) {
+  const el = document.getElementById(previewId);
+  if (!el || el.dataset.iaReady !== '1') return '';
+  return (el.textContent || '').trim();
+}
+
+async function mejorarConIA({ textareaId, previewId, contexto }) {
+  const textarea = document.getElementById(textareaId);
+  const preview = document.getElementById(previewId);
+  if (!textarea || !preview) return;
+
+  const borrador = textarea.value.trim();
+  if (!borrador) {
+    toast('Escribe el texto de esta sección antes de mejorar con IA.', 'advertencia');
+    marcarInvalido(textarea);
+    return;
+  }
+
+  preview.dataset.iaReady = '0';
+  preview.classList.remove('invalido');
+  preview.textContent = '⏳ Redactando diagnóstico profesional...';
+
+  const btn = document.querySelector(`.btn-mejorar-ia[data-preview="${previewId}"]`);
+  if (btn) btn.disabled = true;
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (tokenGuardado) headers.Authorization = `Bearer ${tokenGuardado}`;
+
+    const res = await fetch('/api/redactar', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ contexto, borrador }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+    preview.textContent = String(data.texto || '').trim();
+    preview.dataset.iaReady = '1';
+  } catch (err) {
+    limpiarPreviewIA(preview);
+    toast(err.message || 'No se pudo mejorar el texto con IA.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function registrarEventosIA() {
+  CAMPOS_IA_BETA.forEach(({ textareaId, previewId }) => {
+    const ta = document.getElementById(textareaId);
+    if (!ta) return;
+    ta.addEventListener('input', () => {
+      limpiarPreviewIA(document.getElementById(previewId));
+    });
+  });
+
+  document.querySelectorAll('.btn-mejorar-ia').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      mejorarConIA({
+        textareaId: btn.dataset.textarea,
+        previewId: btn.dataset.preview,
+        contexto: btn.dataset.contexto || '',
+      });
+    });
+  });
+}
+
 /* ══════════════════════════════════════════════════════
    8. EVENTOS DEL FORMULARIO
    ══════════════════════════════════════════════════════ */
@@ -824,7 +1012,11 @@ function registrarEventosFormulario() {
     await autocompletarEquipoPorSerial(serial);
   });
 
-  initDiagnosticoInteractivo();
+  if (modoFormulario === 'clasico') {
+    initDiagnosticoInteractivo();
+  } else {
+    registrarEventosIA();
+  }
 
   // ── Tabs firma ────────────────────────────────────
   document.getElementById('tab-dibujar').addEventListener('click', () => {
@@ -873,7 +1065,11 @@ function registrarEventosFormulario() {
     document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
     limpiarCamposEquipo();
     bloquearCamposEquipo();
-    resetDiagnosticoInteractivo();
+    if (modoFormulario === 'clasico') {
+      resetDiagnosticoInteractivo();
+    } else {
+      limpiarPreviewsIA();
+    }
     evidenciasAdjuntas = [];
     renderEvidenciasPreview();
     autocompletarDatosTecnico();
@@ -1110,6 +1306,14 @@ async function validarFormulario() {
     { id: 'cargo-tecnico',     nombre: 'Cargo técnico' },
   ];
 
+  if (modoFormulario === 'beta') {
+    requeridos.push(
+      { id: 'descripcion-falla', nombre: 'Descripción de la falla' },
+      { id: 'acciones-realizadas', nombre: 'Acciones realizadas' },
+      { id: 'diagnostico-final', nombre: 'Diagnóstico' },
+    );
+  }
+
   requeridos.forEach(({ id, nombre }) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1120,6 +1324,21 @@ async function validarFormulario() {
       valido = false;
     }
   });
+
+  if (modoFormulario === 'beta') {
+    const faltanIA = [];
+    CAMPOS_IA_BETA.forEach(({ previewId, nombre }) => {
+      const preview = document.getElementById(previewId);
+      if (!textoPreviewIA(previewId)) {
+        if (preview) preview.classList.add('invalido');
+        faltanIA.push(nombre);
+        valido = false;
+      }
+    });
+    if (faltanIA.length) {
+      toast('Usa «Mejorar con IA» en las tres secciones. El PDF usa solo esa vista previa.', 'error');
+    }
+  }
 
   // Validar que el serial exista en inventario (bloquea PDF si no existe)
   const serialEl = document.getElementById('serial');
@@ -1138,20 +1357,22 @@ async function validarFormulario() {
     }
   }
 
-  const diagVal = validarDiagnosticoInteractivo();
-  if (!diagVal.valido) {
-    const bloques = ['diag-bloque-descripcion'];
-    if (document.getElementById('diag-tipo')?.value === 'DAAS') {
-      bloques.push('diag-bloque-daas');
-    } else {
-      bloques.push('diag-bloque-acciones');
+  if (modoFormulario === 'clasico') {
+    const diagVal = validarDiagnosticoInteractivo();
+    if (!diagVal.valido) {
+      const bloques = ['diag-bloque-descripcion'];
+      if (document.getElementById('diag-tipo')?.value === 'DAAS') {
+        bloques.push('diag-bloque-daas');
+      } else {
+        bloques.push('diag-bloque-acciones');
+      }
+      bloques.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('invalido');
+      });
+      toast(diagVal.mensaje, 'error');
+      valido = false;
     }
-    bloques.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('invalido');
-    });
-    toast(diagVal.mensaje, 'error');
-    valido = false;
   }
 
   if (!obtenerFirmaBase64()) {
@@ -1246,13 +1467,19 @@ function recopilarValores() {
     hd:                formatearHdPdf(get('hd')),
     appsMayorUso:      get('apps-mayor-uso'),
     appsFueraEstandar: get('apps-fuera-estandar'),
-    descripcionFalla:  get('descripcion-falla'),
-    accionesRealizadas: get('acciones-realizadas'),
-    diagnosticoFinal:  get('diagnostico-final'),
+    descripcionFalla:  modoFormulario === 'beta'
+      ? textoPreviewIA('ia-preview-descripcion-falla')
+      : get('descripcion-falla'),
+    accionesRealizadas: modoFormulario === 'beta'
+      ? textoPreviewIA('ia-preview-acciones-realizadas')
+      : get('acciones-realizadas'),
+    diagnosticoFinal:  modoFormulario === 'beta'
+      ? textoPreviewIA('ia-preview-diagnostico-final')
+      : get('diagnostico-final'),
     nombreTecnico:     get('nombre-tecnico'),
     cedulaTecnico:     get('cedula-tecnico'),
     cargoTecnico:      get('cargo-tecnico'),
-    tipoDiagnostico:   get('diag-tipo'),
+    tipoDiagnostico:   modoFormulario === 'beta' ? 'BETA' : get('diag-tipo'),
     sedeCodigo:        SEDES_CODIGOS.find(s => s.sede === get('sede'))?.codigo || '',
     firmaBase64,
     // Campos del test de fabricante no capturados en este formulario
@@ -1308,12 +1535,15 @@ async function generarPDF() {
     URL.revokeObjectURL(url);
 
     toast('PDF generado y descargado correctamente.', 'exito');
+    mostrarPantallaBienvenida();
   } catch (err) {
     console.error('Error generando PDF:', err);
     toast(`Error al generar el PDF: ${err.message || 'Intenta de nuevo.'}`, 'error');
   } finally {
-    btnGenerar.disabled = false;
-    btnGenerar.textContent = 'Generar PDF';
+    if (btnGenerar?.isConnected) {
+      btnGenerar.disabled = false;
+      btnGenerar.textContent = 'Generar PDF';
+    }
   }
 }
 
