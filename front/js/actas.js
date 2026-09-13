@@ -47,6 +47,18 @@ const TIPOS_EQUIPO = [
   'TABLET',
   'VERIFICADOR PRECIOS',
 ];
+const TIPOS_EQUIPO_NORM = new Map(
+  TIPOS_EQUIPO.map((t) => [t.normalize('NFD').replace(/[\u0300-\u036f]/g, ''), t])
+);
+const HEADER_TXT_ACTIVO = {
+  tipo: ['tipo', 'tipo de equipo', 'tipo equipo'],
+  serie: ['serie', 'serial'],
+  marca: ['marca', 'fabricante'],
+  modelo: ['modelo'],
+  etiqueta: ['etiqueta', 'no etiqueta', 'n etiqueta'],
+  otros: ['otros', 'ip'],
+  software: ['software'],
+};
 
 let activos = [];
 let evidenciasAdjuntas = [];
@@ -132,6 +144,152 @@ function buscarEquipoPorSerial(serial) {
   const limpio = normalizarSerialBusqueda(serial);
   if (!limpio) return null;
   return datosInventario.find((e) => normalizarSerialBusqueda(e.serial) === limpio) || null;
+}
+
+function normTipoEquipo(val) {
+  return String(val ?? '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function resolverTipoEquipo(val) {
+  return TIPOS_EQUIPO_NORM.get(normTipoEquipo(val)) || '';
+}
+
+function normHeaderTxt(val) {
+  return String(val ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[._]/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function esCabeceraTxt(celdas) {
+  const n = celdas.map(normHeaderTxt);
+  return n.some((c) => HEADER_TXT_ACTIVO.tipo.includes(c) || HEADER_TXT_ACTIVO.serie.includes(c));
+}
+
+function mapaColumnasTxt(celdas) {
+  const map = {};
+  celdas.forEach((celda, i) => {
+    const n = normHeaderTxt(celda);
+    for (const [campo, alias] of Object.entries(HEADER_TXT_ACTIVO)) {
+      if (alias.includes(n) && map[campo] === undefined) map[campo] = i;
+    }
+  });
+  return map;
+}
+
+function parsearLineasTxtActivos(texto) {
+  const raw = String(texto ?? '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lineas = raw.split('\n');
+  let colMap = null;
+  const filas = [];
+  lineas.forEach((linea, idx) => {
+    const trimmed = linea.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const sep = trimmed.includes(';') ? ';' : ',';
+    const celdas = trimmed.split(sep).map((c) => c.trim());
+    if (!colMap && esCabeceraTxt(celdas)) {
+      colMap = mapaColumnasTxt(celdas);
+      return;
+    }
+    const getCol = (campo, fallbackIdx) => {
+      const i = colMap && colMap[campo] !== undefined ? colMap[campo] : fallbackIdx;
+      return i >= 0 && celdas[i] !== undefined ? celdas[i] : '';
+    };
+    filas.push({
+      linea: idx + 1,
+      tipo: getCol('tipo', 0),
+      serie: getCol('serie', 1),
+      otros: getCol('otros', 5),
+      software: getCol('software', 6),
+    });
+  });
+  return filas;
+}
+
+async function importarActivosDesdeTxt(texto) {
+  await inventarioListo;
+  if (!datosInventario.length) {
+    const ok = await recargarInventario();
+    if (!ok || !datosInventario.length) {
+      toast('No se pudo cargar el inventario.', 'error');
+      return;
+    }
+  }
+  const filas = parsearLineasTxtActivos(texto);
+  if (!filas.length) {
+    toast('El archivo no tiene líneas de activos (tipo;serie).', 'advertencia');
+    return;
+  }
+  const seriesYa = new Set(activos.map((a) => normalizarSerialBusqueda(a.serie)).filter(Boolean));
+  const errores = [];
+  let agregados = 0;
+  filas.forEach((fila) => {
+    const tipo = resolverTipoEquipo(fila.tipo);
+    const serie = String(fila.serie || '').trim();
+    const serieKey = normalizarSerialBusqueda(serie);
+    if (!tipo) {
+      errores.push(`Línea ${fila.linea}: tipo inválido${fila.tipo ? ` (${fila.tipo})` : ''}`);
+      return;
+    }
+    if (!serieKey) {
+      errores.push(`Línea ${fila.linea}: falta serie`);
+      return;
+    }
+    if (seriesYa.has(serieKey)) {
+      errores.push(`Línea ${fila.linea}: serie duplicada (${serie})`);
+      return;
+    }
+    const equipo = buscarEquipoPorSerial(serie);
+    if (!equipo) {
+      errores.push(`Línea ${fila.linea}: serie no está en inventario (${serie})`);
+      return;
+    }
+    seriesYa.add(serieKey);
+    activos.push({
+      tipo,
+      marca: equipo.fabricante || '',
+      modelo: equipo.modelo || '',
+      serie: equipo.serial || serie,
+      etiqueta: equipo.etiqueta || '',
+      otros: fila.otros || '',
+      software: fila.software || '',
+      inventarioOk: true,
+    });
+    agregados += 1;
+  });
+  renderPreviewActivos();
+  renderErroresTxt(errores);
+  if (agregados && errores.length) {
+    toast(`Se agregaron ${agregados} activo(s). ${errores.length} línea(s) no se cargaron.`, 'advertencia');
+  } else if (agregados) {
+    toast(`Se agregaron ${agregados} activo(s) desde el archivo.`, 'exito');
+  } else {
+    toast(errores[0] || 'No se pudo cargar ningún activo.', 'error');
+  }
+}
+
+function renderErroresTxt(errores) {
+  const box = document.getElementById('activos-txt-errores');
+  if (!box) return;
+  if (!errores.length) {
+    box.hidden = true;
+    box.innerHTML = '';
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = `
+    <p class="actas-txt-errores__titulo">Líneas no cargadas (${errores.length})</p>
+    <ul class="actas-txt-errores__lista">
+      ${errores.map((msg) => `<li>${esc(msg)}</li>`).join('')}
+    </ul>
+  `;
 }
 
 function setCamposEquipoReadonly(readonly) {
@@ -364,8 +522,14 @@ function renderFormularioActas() {
           <div class="campo"><label for="act-otros">Otros (IP / # puertos / etc.)</label><input type="text" id="act-otros"></div>
           <div class="campo campo-full"><label for="act-software">Relación de software fuera del inventario</label><input type="text" id="act-software"></div>
         </div>
-        <button type="button" class="btn btn--outline" id="btn-agregar-activo">Agregar otro</button>
+        <div class="actas-activo-acciones">
+          <button type="button" class="btn btn--outline" id="btn-agregar-activo">Agregar otro</button>
+          <label class="btn btn--outline actas-btn-archivo" for="activos-txt-input">Cargar desde archivo</label>
+          <input type="file" id="activos-txt-input" accept=".txt,.csv,text/plain,text/csv" hidden>
+        </div>
+        <p class="evidencias-ayuda">Archivo .txt o .csv UTF-8, una línea por activo: <code>tipo;serie</code> o <code>tipo,serie</code> (opcional cabecera). Marca, modelo y etiqueta salen del inventario.</p>
         <div class="actas-preview" id="activos-preview"></div>
+        <div class="actas-txt-errores" id="activos-txt-errores" hidden></div>
       </fieldset>
 
       <fieldset class="seccion">
@@ -759,6 +923,23 @@ function registrarEventosFormulario() {
   });
   document.getElementById('btn-agregar-activo')?.addEventListener('click', () => {
     agregarActivoDesdeForm();
+  });
+  document.getElementById('activos-txt-input')?.addEventListener('change', async (e) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    const nombre = String(file.name || '').toLowerCase();
+    if (!nombre.endsWith('.txt') && !nombre.endsWith('.csv')) {
+      toast('Solo se admiten archivos .txt o .csv.', 'advertencia');
+      return;
+    }
+    try {
+      const texto = await file.text();
+      await importarActivosDesdeTxt(texto);
+    } catch {
+      toast('No se pudo leer el archivo.', 'error');
+    }
   });
   document.getElementById('act-serie')?.addEventListener('input', () => {
     if (serieInventarioOk) limpiarCamposEquipoInventario();
