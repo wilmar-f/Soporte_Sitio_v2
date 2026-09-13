@@ -1,0 +1,68 @@
+.actas-preview {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #f3f4f6;
+  border: 1px solid var(--color-gris-borde, #d1d5db);
+  border-radius: 6px;
+}
+.actas-preview__titulo {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+}
+.actas-preview__vacio {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+.actas-preview__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.actas-preview__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.actas-preview__item p {
+  margin: 0;
+}
+.actas-preview__item button {
+  flex-shrink: 0;
+}
+.actas-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+}
+.actas-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: none;
+}
+.actas-radio input {
+  margin: 0;
+}
+#tipo-novedad-bloque.invalido .actas-radios {
+  outline: 2px solid var(--color-peligro, #fd202b);
+  outline-offset: 4px;
+  border-radius: 4px;
+}

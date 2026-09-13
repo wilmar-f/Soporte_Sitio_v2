@@ -48,6 +48,7 @@ function bootstrapDataFiles() {
   syncExcelFromRepo('inventario.xlsx', dataDir);
   syncExcelFromRepo('usuarios.xlsx', dataDir);
   syncExcelFromRepo('videoconferencia.xlsx', dataDir);
+  syncExcelFromRepo('Actas.xlsx', dataDir);
 
   const targetDiagnosticos = path.join(dataDir, 'diagnosticos.json');
   if (!fs.existsSync(targetDiagnosticos)) {

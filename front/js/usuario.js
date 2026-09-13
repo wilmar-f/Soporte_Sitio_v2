@@ -413,6 +413,13 @@ function registrarEventosSidebar() {
     });
   }
 
+  const btnActas = document.getElementById('btn-actas');
+  if (btnActas) {
+    btnActas.addEventListener('click', () => {
+      window.location.href = '/pages/actas.html';
+    });
+  }
+
   const btnVideoconferencia = document.getElementById('btn-videoconferencia');
   if (btnVideoconferencia) {
     btnVideoconferencia.addEventListener('click', () => {

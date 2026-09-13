@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer-core');
 const { PDFDocument } = require('pdf-lib');
 const { renderDiagnosticoHtml } = require('../utils/renderDiagnostico');
 const { renderEvidenciasHtml } = require('../utils/renderEvidencias');
+const { renderActaHtml } = require('../utils/renderActa');
 
 let browserPromise = null;
 
@@ -156,8 +157,47 @@ async function generarPdfDiagnostico(datos) {
   return mergePdfBuffers([mainBuffer, evBuffer]);
 }
 
+const FILAS_ACTA = 13;
+
+function paginarActivos(activos) {
+  const list = Array.isArray(activos) ? activos : [];
+  const pages = [];
+  for (let i = 0; i < Math.max(list.length, 1); i += FILAS_ACTA) {
+    const slice = list.slice(i, i + FILAS_ACTA);
+    while (slice.length < FILAS_ACTA) slice.push({});
+    pages.push(slice);
+  }
+  return pages;
+}
+
+async function generarPdfActa(datos) {
+  const paginas = paginarActivos(datos.activos);
+  const buffers = [];
+  for (let i = 0; i < paginas.length; i += 1) {
+    const html = renderActaHtml({
+      ...datos,
+      filas: paginas[i],
+      mostrarCierre: i === paginas.length - 1,
+      pagina: i + 1,
+      totalPaginas: paginas.length,
+    });
+    buffers.push(await htmlToPdfBuffer(html, { autoScale: true }));
+  }
+
+  const evidencias = Array.isArray(datos.evidencias)
+    ? datos.evidencias.filter((src) => typeof src === 'string' && src.startsWith('data:'))
+    : [];
+  if (evidencias.length) {
+    buffers.push(await htmlToPdfBuffer(renderEvidenciasHtml(evidencias), { autoScale: false }));
+  }
+
+  if (buffers.length === 1) return buffers[0];
+  return mergePdfBuffers(buffers);
+}
+
 module.exports = {
   generarPdfDiagnostico,
+  generarPdfActa,
   closeBrowser,
   PDF_MARGINS,
   LETTER_WIDTH_PX,

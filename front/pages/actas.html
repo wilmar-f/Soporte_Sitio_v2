@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Usuario — Diagnóstico</title>
+  <title>Actas — Diagnóstico</title>
   <link rel="stylesheet" href="../css/global.css">
   <link rel="stylesheet" href="usuario.module.css">
+  <link rel="stylesheet" href="actas.module.css">
 </head>
 <body>
   <header id="banner"></header>
   <div id="toast-container"></div>
 
   <main class="app-layout">
-    <!-- ── Sidebar ─────────────────────── -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__perfil">
         <div class="sidebar__avatar" id="user-avatar" aria-hidden="true"></div>
@@ -36,11 +36,11 @@
           <span class="sidebar__btn-icono">👥</span>
           Usuarios
         </button>
-        <button type="button" class="sidebar__btn sidebar__btn--activo" id="btn-diagnostico">
+        <button type="button" class="sidebar__btn" id="btn-diagnostico">
           <span class="sidebar__btn-icono">📋</span>
           Diagnóstico
         </button>
-        <button type="button" class="sidebar__btn" id="btn-actas">
+        <button type="button" class="sidebar__btn sidebar__btn--activo" id="btn-actas">
           <span class="sidebar__btn-icono">📄</span>
           Actas
         </button>
@@ -63,12 +63,11 @@
       </nav>
     </aside>
 
-    <!-- ── Panel principal ────────────── -->
     <section class="panel-principal" id="panel-principal" aria-live="polite">
       <div class="panel-bienvenida" id="panel-bienvenida">
-        <div class="panel-bienvenida__icono">📋</div>
-        <h2>Panel de Diagnóstico</h2>
-        <p>Haz clic en <strong>Diagnóstico</strong> en el menú lateral para abrir el formulario.</p>
+        <div class="panel-bienvenida__icono">📄</div>
+        <h2>Actas de novedades</h2>
+        <p>Haz clic en <strong>Actas</strong> en el menú lateral para abrir el formulario.</p>
       </div>
     </section>
   </main>
@@ -77,6 +76,6 @@
     <p>&copy; 2026 Sistema de Diagnóstico Web - Soporte en Sitio — Todos los derechos reservados</p>
   </footer>
 
-  <script type="module" src="../js/usuario.js"></script>
+  <script type="module" src="../js/actas.js"></script>
 </body>
 </html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @page { size: letter; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 6pt;
+      color: #000;
+      background: #fff;
+    }
+    table.grid {
+      width: 100%;
+      height: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    table.grid col.cA { width: 7.0%; }
+    table.grid col.cB { width: 18.0%; }
+    table.grid col.cC { width: 7.6%; }
+    table.grid col.cD { width: 10.0%; }
+    table.grid col.cE { width: 10.0%; }
+    table.grid col.cF { width: 8.0%; }
+    table.grid col.cG { width: 14.8%; }
+    table.grid col.cH { width: 5.4%; }
+    table.grid col.cI { width: 6.4%; }
+    table.grid col.cJ { width: 12.8%; }
+    table.grid td {
+      border: 0.6pt solid #000;
+      padding: 1px 3px;
+      vertical-align: middle;
+      height: 11pt;
+      font-family: Arial, sans-serif;
+      font-size: 6pt;
+    }
+    .fill {
+      background: #C0C0C0;
+      font-family: Arial, sans-serif;
+      font-size: 5pt;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .center { text-align: center; }
+    .dato { font-size: 6pt; }
+    .sin-celda {
+      border: none !important;
+      background: transparent !important;
+    }
+    table.grid td.logo-cell {
+      border: 0.6pt solid #000;
+      text-align: center;
+      vertical-align: middle;
+      height: 42pt;
+    }
+    .logo-cell img { height: 36pt; max-width: 150px; object-fit: contain; }
+    table.grid td.titulo {
+      border: 0.6pt solid #000;
+      font-family: Arial, sans-serif;
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+      height: 42pt;
+    }
+    table.grid tr.sep td {
+      border: none !important;
+      height: 2pt !important;
+      min-height: 2pt;
+      max-height: 2pt;
+      padding: 0 !important;
+      font-size: 0;
+      line-height: 0;
+    }
+    table.grid tr.sep-firma td {
+      border: none !important;
+      height: 7pt !important;
+      padding: 0 !important;
+      font-size: 0;
+      line-height: 0;
+    }
+    table.grid td.nov-cell {
+      height: 36pt;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 5pt;
+      padding: 2px 1px;
+    }
+    .nov-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+    }
+    .nov-line { font-size: 5pt; line-height: 1.1; white-space: nowrap; }
+    .nov-side {
+      width: 100%;
+      max-width: 72px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .nov-inline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 5pt;
+      line-height: 1.2;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .nov-inline .lbl { flex: 1; text-align: left; }
+    .box {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border: 1px solid #000;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .box.on { background: #000; }
+    table.grid td.h-act { height: 13pt; text-align: center; font-size: 6pt; }
+    table.grid td.area {
+      height: 36pt;
+      vertical-align: top;
+      text-align: left;
+      white-space: pre-wrap;
+      font-size: 6pt;
+    }
+    table.grid td.clausula {
+      border: none !important;
+      font-size: 5pt;
+      text-align: justify;
+      padding: 0 !important;
+      height: auto !important;
+      line-height: 1.1;
+      vertical-align: top;
+    }
+    table.grid td.clausula p {
+      margin: 0;
+      padding: 0;
+    }
+    .fill-a { text-align: center; }
+    table.grid td.firma-alta {
+      height: 42pt;
+      text-align: center;
+      vertical-align: bottom;
+      font-size: 6pt;
+    }
+    .firma-alta img { max-height: 34pt; max-width: 100%; display: block; margin: 0 auto 2px; }
+    table.grid td.firma-dato { height: 12pt; text-align: left; font-size: 6pt; }
+    table.grid tr.pie-spacer td {
+      border: none !important;
+      padding: 0 !important;
+      height: 100%;
+      font-size: 0;
+      line-height: 0;
+    }
+    table.grid td.pie {
+      border: none !important;
+      font-size: 4pt;
+      padding: 0;
+      vertical-align: bottom;
+      white-space: nowrap;
+      height: auto;
+    }
+    .pie-izq { text-align: left; }
+    .pie-der { text-align: right; }
+  </style>
+</head>
+<body>
+  <table class="grid">
+    <colgroup>
+      <col class="cA"><col class="cB"><col class="cC"><col class="cD"><col class="cE">
+      <col class="cF"><col class="cG"><col class="cH"><col class="cI"><col class="cJ">
+    </colgroup>
+    <tr>
+      <td class="logo-cell" colspan="2">{{#if logoSrc}}<img src="{{{logoSrc}}}" alt="">{{/if}}</td>
+      <td class="titulo" colspan="8">ACTA DE NOVEDADES<br>ACTIVOS HW &amp; SW - SISTEMAS Y TECNOLOGÍA</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">FECHA NOVEDAD</td>
+      <td class="dato center" colspan="4">{{fechaNovedad}}</td>
+      <td></td>
+      <td></td>
+      <td class="fill center">No.</td>
+      <td class="dato center">{{numeroActa}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">TIPO DE NOVEDAD</td>
+      {{#each novedad.main}}
+      <td class="nov-cell">
+        <div class="nov-stack">
+          {{#each lineas}}<div class="nov-line">{{this}}</div>{{/each}}
+          <span class="box{{#if selected}} on{{/if}}"></span>
+        </div>
+      </td>
+      {{/each}}
+      <td class="nov-cell" colspan="2">
+        <div class="nov-side">
+          {{#each novedad.bajoNo}}
+          <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
+          {{/each}}
+        </div>
+      </td>
+      <td class="nov-cell">
+        <div class="nov-side">
+          {{#each novedad.bajoActa}}
+          <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
+          {{/each}}
+        </div>
+      </td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+
+    <tr>
+      <td class="fill" colspan="2">ENTREGADO O REALIZADO POR:</td>
+      <td class="dato" colspan="4">{{entregado.nombre}}</td>
+      <td class="fill">CEDULA</td>
+      <td class="dato" colspan="3">{{entregado.cedula}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">CARGO</td>
+      <td class="dato" colspan="4">{{entregado.cargo}}</td>
+      <td class="fill">DEPARTAMENTO</td>
+      <td class="dato" colspan="3">{{entregado.departamento}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">UNIDAD DE NEGOCIO</td>
+      <td class="dato" colspan="4">{{entregado.unidadNegocio}}</td>
+      <td class="fill">UBICACIÓN FÍSICA</td>
+      <td class="dato" colspan="3">{{entregado.ubicacion}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">RECIBIDO POR: RESPONSABLE</td>
+      <td class="dato" colspan="4">{{recibido.nombre}}</td>
+      <td class="fill">CEDULA</td>
+      <td class="dato" colspan="3">{{recibido.cedula}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">CARGO</td>
+      <td class="dato" colspan="4">{{recibido.cargo}}</td>
+      <td class="fill">DEPARTAMENTO</td>
+      <td class="dato" colspan="3">{{recibido.departamento}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr>
+      <td class="fill" colspan="2">UNIDAD DE NEGOCIO</td>
+      <td class="dato" colspan="4">{{recibido.unidadNegocio}}</td>
+      <td class="fill">UBICACIÓN</td>
+      <td class="dato" colspan="3">{{recibido.ubicacion}}</td>
+    </tr>
+    <tr>
+      <td class="fill" colspan="2">UBICACIÓN CONTABLE (NOMINA)</td>
+      <td class="dato" colspan="4">{{ubicacionContable}}</td>
+      <td class="fill">USUARIO DE RED</td>
+      <td class="dato" colspan="3">{{usuarioRed}}</td>
+    </tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+
+    <tr>
+      <td class="fill center" colspan="8">DATOS DEL ACTIVO - RELACIÓN DE HARDWARE</td>
+      <td class="fill center" colspan="2" rowspan="2">Relacion de Software.<br>fuera del Inventario</td>
+    </tr>
+    <tr>
+      <td class="fill center" colspan="2">TIPO DE EQUIPO</td>
+      <td class="fill center">MARCA</td>
+      <td class="fill center">MODELO</td>
+      <td class="fill center">SERIE</td>
+      <td class="fill center">No. ETIQUETA</td>
+      <td class="fill center" colspan="2">OTROS (IP / # PUERTOS / ETC)</td>
+    </tr>
+    {{#each filas}}
+    <tr>
+      <td class="h-act" colspan="2">{{tipo}}</td>
+      <td class="h-act">{{marca}}</td>
+      <td class="h-act">{{modelo}}</td>
+      <td class="h-act">{{serie}}</td>
+      <td class="h-act">{{etiqueta}}</td>
+      <td class="h-act" colspan="2">{{otros}}</td>
+      <td class="h-act" colspan="2">{{software}}</td>
+    </tr>
+    {{/each}}
+
+    {{#if mostrarCierre}}
+    <tr><td class="fill center" colspan="10">CONFIGURACIÓN DEL HARDWARE</td></tr>
+    <tr><td class="area" colspan="10">{{configHardware}}</td></tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr><td class="fill center" colspan="10">RELACIÓN DE MODIFICACIONES, ACTUALIZACIONES Y/O ADICIONES</td></tr>
+    <tr><td class="area" colspan="10">{{modificaciones}}</td></tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+    <tr><td class="fill center" colspan="10">OBSERVACIONES</td></tr>
+    <tr><td class="area" colspan="10">{{observaciones}}</td></tr>
+    <tr class="sep"><td colspan="10"></td></tr>
+
+    <tr>
+      <td class="clausula" colspan="10">
+        <p>1. LOS RECURSOS DE HARDWARE Y SOFTWARE RELACIONADOS EN LA PRESENTE ACTA Y SUS ANEXOS, SON LOS ASIGNADOS POR LA COMPAÑÍA PARA UN DESARROLLO OPTIMO DE LAS FUNCIONES, EN NINGÚN CASO PUEDEN SER CAMBIADOS NI REMOVIDOS, NI PODRÁN INSTALARSE APLICACIONES ADICIONALES A LAS AQUÍ RELACIONADAS, LOS ÚNICOS FUNCIONARIOS AUTORIZADOS PARA REALIZAR ESTA LABOR SON LOS MIEMBROS DEL DEPARTAMENTO DE TECNOLOGÍA Y SISTEMAS.</p>
+        <p>2. EL USUARIO DEBERÁ CUMPLIR CON LO ESTABLECIDO EN EL NUMERAL 13 "USO DE BIENES Y RECURSOS DE LA COMPAÑÍA" DEL CÓDIGO DE ÉTICA DE LA COMPAÑÍA.</p>
+        <p>3. ES DE OBLIGACIÓN DEL USUARIO DAR UN USO ADECUADO AL EQUIPO ASIGNADO Y EN CASO DE DAÑO O PERDIDA DEL EQUIPO Y/O SUS ACCESORIOS, ES DE RESPONSABILIDAD DEL USUARIO CANCELAR EL VALOR DE LA REPARACIÓN Y/O REPOSICIÓN DEL EQUIPO O SUS ACCESORIOS POR UNOS IGUALES O DE SIMILAR CARACTERÍSTICAS AL ASIGNADO.</p>
+        <p>4. EN CASO DE RETIRO ES RESPONSABILIDAD DEL USUARIO ENTREGAR EL EQUIPO Y SUS ACCESORIOS EN BUENAS CONDICIONES DE USO. ADICIONALMENTE AUTORIZO A LA COMPAÑÍA A DESCONTAR DE MI LIQUIDACIÓN EL VALOR QUE CORRESPONDA EN CASO DE DAÑOS AL EQUIPO ASIGNADO.</p>
+      </td>
+    </tr>
+
+    <tr class="sep-firma"><td colspan="10"></td></tr>
+    <tr>
+      <td class="sin-celda"></td>
+      <td class="fill center" colspan="4">ENTREGADO POR</td>
+      <td class="fill center" colspan="2">USUARIO RESPONSABLE</td>
+      <td class="fill center" colspan="3">DIRECTOR Y/O JEFE</td>
+    </tr>
+    <tr>
+      <td class="fill fill-a">FIRMA</td>
+      <td class="firma-alta" colspan="2">
+        {{#if firmaEntrega}}<img src="{{{firmaEntrega}}}" alt="">{{/if}}
+      </td>
+      <td class="firma-alta" colspan="2"></td>
+      <td class="firma-alta" colspan="2">
+        {{#if firmaRecibe}}<img src="{{{firmaRecibe}}}" alt="">{{/if}}
+      </td>
+      <td class="firma-alta" colspan="3"></td>
+    </tr>
+    <tr>
+      <td class="fill fill-a">NOMBRE</td>
+      <td class="firma-dato" colspan="2">{{entregado.nombre}}</td>
+      <td class="firma-dato" colspan="2"></td>
+      <td class="firma-dato" colspan="2">{{recibido.nombre}}</td>
+      <td class="firma-dato" colspan="3"></td>
+    </tr>
+    <tr>
+      <td class="fill fill-a">CEDULA</td>
+      <td class="firma-dato" colspan="2">{{entregado.cedula}}</td>
+      <td class="firma-dato" colspan="2"></td>
+      <td class="firma-dato" colspan="2">{{recibido.cedula}}</td>
+      <td class="firma-dato" colspan="3"></td>
+    </tr>
+    <tr>
+      <td class="fill fill-a">CARGO</td>
+      <td class="firma-dato" colspan="2">{{entregado.cargo}}</td>
+      <td class="firma-dato" colspan="2"></td>
+      <td class="firma-dato" colspan="2">{{recibido.cargo}}</td>
+      <td class="firma-dato" colspan="3"></td>
+    </tr>
+    {{/if}}
+    <tr class="pie-spacer"><td colspan="10"></td></tr>
+    <tr>
+      <td class="pie pie-izq" colspan="3">PR-DS-005 PROCEDIMIENTO DE ADMINISTRACIÓN DE ACTIVOS DE TECNOLOGÍA</td>
+      <td class="pie" colspan="3"></td>
+      <td class="pie pie-der" colspan="4">FR-DS-007 VERSIÓN: 2 05-10-2009</td>
+    </tr>
+  </table>
+</body>
+</html>

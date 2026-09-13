@@ -14,6 +14,7 @@ const adminRoutes = require('./routes/admin');
 const videoconferenciaRoutes = require('./routes/videoconferencia');
 const estadisticasRoutes = require('./routes/estadisticas');
 const redactarRoutes = require('./routes/redactar');
+const actaRoutes = require('./routes/acta');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.use('/api', adminRoutes);
 app.use('/api', videoconferenciaRoutes);
 app.use('/api', estadisticasRoutes);
 app.use('/api', redactarRoutes);
+app.use('/api', actaRoutes);
 
 // Root redirect to login page
 app.get('/', (req, res) => {
@@ -46,4 +48,13 @@ app.use('/api/*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  setImmediate(() => {
+    try {
+      const { getActasPersonas } = require('./utils/readActasPersonas');
+      const n = getActasPersonas().length;
+      console.log(`Actas.xlsx: ${n} personas en caché`);
+    } catch (err) {
+      console.warn('No se pudo precargar Actas.xlsx:', err.message);
+    }
+  });
 });

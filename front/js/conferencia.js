@@ -292,6 +292,9 @@ function registrarEventos() {
   document.getElementById('btn-diagnostico').addEventListener('click', () => {
     window.location.href = '/pages/usuario.html?panel=diagnostico';
   });
+  document.getElementById('btn-actas')?.addEventListener('click', () => {
+    window.location.href = '/pages/actas.html';
+  });
   document.getElementById('btn-diagnostico-beta')?.addEventListener('click', () => {
     irAPanelUsuario('diagnostico-beta');
   });
