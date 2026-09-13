@@ -177,7 +177,6 @@ async function generarPdfActa(datos) {
     const html = renderActaHtml({
       ...datos,
       filas: paginas[i],
-      mostrarCierre: i === paginas.length - 1,
       pagina: i + 1,
       totalPaginas: paginas.length,
     });

@@ -111,7 +111,6 @@ function renderActaHtml(datos) {
     observaciones: mayus(datos.observaciones),
     firmaEntrega,
     firmaRecibe,
-    mostrarCierre: Boolean(datos.mostrarCierre),
     pagina: datos.pagina || 1,
     totalPaginas: datos.totalPaginas || 1,
   });
