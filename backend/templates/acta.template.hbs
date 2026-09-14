@@ -61,7 +61,7 @@
     table.grid td.titulo {
       border: 0.6pt solid #000;
       font-family: Arial, sans-serif;
-      font-size: 10pt;
+      font-size: 8pt;
       font-weight: 700;
       text-align: center;
       line-height: 1.2;
@@ -89,6 +89,13 @@
       text-align: center;
       font-size: 5pt;
       padding: 2px 1px;
+    }
+    table.grid td.nov-pair {
+      height: 18pt;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 5pt;
+      padding: 1px 3px;
     }
     .nov-stack {
       display: flex;
@@ -191,34 +198,42 @@
       <td class="dato center" colspan="4">{{fechaNovedad}}</td>
       <td></td>
       <td></td>
-      <td class="fill center">No.</td>
+      <td></td>
       <td class="dato center">{{numeroActa}}</td>
     </tr>
     <tr class="sep"><td colspan="10"></td></tr>
     <tr>
-      <td class="fill" colspan="2">TIPO DE NOVEDAD</td>
+      <td class="fill" colspan="2" rowspan="2">TIPO DE NOVEDAD</td>
       {{#each novedad.main}}
-      <td class="nov-cell">
+      <td class="nov-cell" rowspan="2">
         <div class="nov-stack">
           {{#each lineas}}<div class="nov-line">{{this}}</div>{{/each}}
           <span class="box{{#if selected}} on{{/if}}"></span>
         </div>
       </td>
       {{/each}}
-      <td class="nov-cell" colspan="2">
-        <div class="nov-side">
-          {{#each novedad.bajoNo}}
-          <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
-          {{/each}}
-        </div>
+      {{#each novedad.bajoNo}}{{#if @first}}
+      <td class="nov-pair" colspan="2">
+        <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
       </td>
-      <td class="nov-cell">
-        <div class="nov-side">
-          {{#each novedad.bajoActa}}
-          <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
-          {{/each}}
-        </div>
+      {{/if}}{{/each}}
+      {{#each novedad.bajoActa}}{{#if @first}}
+      <td class="nov-pair">
+        <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
       </td>
+      {{/if}}{{/each}}
+    </tr>
+    <tr>
+      {{#each novedad.bajoNo}}{{#if @last}}
+      <td class="nov-pair" colspan="2">
+        <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
+      </td>
+      {{/if}}{{/each}}
+      {{#each novedad.bajoActa}}{{#if @last}}
+      <td class="nov-pair">
+        <div class="nov-inline"><span class="lbl">{{label}}</span><span class="box{{#if selected}} on{{/if}}"></span></div>
+      </td>
+      {{/if}}{{/each}}
     </tr>
     <tr class="sep"><td colspan="10"></td></tr>
 
@@ -303,7 +318,7 @@
     <tr class="sep"><td colspan="10"></td></tr>
     <tr><td class="fill center" colspan="10">OBSERVACIONES</td></tr>
     <tr><td class="area" colspan="10">{{observaciones}}</td></tr>
-    <tr class="sep"><td colspan="10"></td></tr>
+    <tr class="sep-firma"><td colspan="10"></td></tr>
 
     <tr>
       <td class="clausula" colspan="10">

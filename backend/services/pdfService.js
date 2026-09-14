@@ -157,7 +157,7 @@ async function generarPdfDiagnostico(datos) {
   return mergePdfBuffers([mainBuffer, evBuffer]);
 }
 
-const FILAS_ACTA = 13;
+const FILAS_ACTA = 16;
 
 function paginarActivos(activos) {
   const list = Array.isArray(activos) ? activos : [];
