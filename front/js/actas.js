@@ -429,10 +429,7 @@ function renderInfoUsuario() {
   }
   document.getElementById('user-avatar').textContent = (nombre || 'U').charAt(0).toUpperCase();
   const esAdmin = esRolAdministrador(usuarioActual.rol);
-  setSidebarBtnVisible(document.getElementById('btn-noticias'), esAdmin);
-  setSidebarBtnVisible(document.getElementById('btn-estadisticas'), esAdmin);
   setSidebarBtnVisible(document.getElementById('btn-usuarios'), esAdmin);
-  setSidebarBtnVisible(document.getElementById('btn-diagnostico-beta'), esAdmin);
 }
 
 function mostrarBienvenida() {
@@ -443,7 +440,7 @@ function mostrarBienvenida() {
     <div class="panel-bienvenida" id="panel-bienvenida">
       <div class="panel-bienvenida__icono">📄</div>
       <h2>Actas de novedades</h2>
-      <p>Haz clic en <strong>Actas</strong> en el menú lateral para abrir el formulario.</p>
+      <p>Haz clic en <strong>Actas Activos</strong> en el menú lateral para abrir el formulario.</p>
     </div>
   `;
 }
@@ -1043,20 +1040,11 @@ function registrarSidebar() {
   document.getElementById('btn-diagnostico-beta')?.addEventListener('click', () => {
     window.location.href = '/pages/usuario.html?panel=diagnostico-beta';
   });
-  document.getElementById('btn-noticias')?.addEventListener('click', () => {
-    window.location.href = '/pages/usuario.html?panel=noticias';
-  });
-  document.getElementById('btn-estadisticas')?.addEventListener('click', () => {
-    window.location.href = '/pages/usuario.html?panel=estadisticas';
-  });
   document.getElementById('btn-usuarios')?.addEventListener('click', () => {
     window.location.href = '/pages/usuario.html?panel=usuarios';
   });
   document.getElementById('btn-videoconferencia')?.addEventListener('click', () => {
     window.location.href = '/pages/conferencia.html';
-  });
-  document.getElementById('btn-piloto-pdp')?.addEventListener('click', () => {
-    window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
   });
   document.getElementById('btn-cerrar-sesion')?.addEventListener('click', () => {
     cerrarSesionStorage();

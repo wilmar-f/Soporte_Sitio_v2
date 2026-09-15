@@ -63,10 +63,7 @@ function renderInfoUsuario() {
   avatarEl.textContent = (nombre || 'U').charAt(0).toUpperCase();
 
   const esAdmin = esRolAdministrador(usuarioActual.rol);
-  setSidebarBtnVisible(document.getElementById('btn-noticias'), esAdmin);
-  setSidebarBtnVisible(document.getElementById('btn-estadisticas'), esAdmin);
   setSidebarBtnVisible(document.getElementById('btn-usuarios'), esAdmin);
-  setSidebarBtnVisible(document.getElementById('btn-diagnostico-beta'), esAdmin);
 }
 
 function setSidebarBtnVisible(btn, visible) {
@@ -298,12 +295,7 @@ function registrarEventos() {
   document.getElementById('btn-diagnostico-beta')?.addEventListener('click', () => {
     irAPanelUsuario('diagnostico-beta');
   });
-  document.getElementById('btn-noticias')?.addEventListener('click', () => irAPanelUsuario('noticias'));
-  document.getElementById('btn-estadisticas')?.addEventListener('click', () => irAPanelUsuario('estadisticas'));
   document.getElementById('btn-usuarios')?.addEventListener('click', () => irAPanelUsuario('usuarios'));
-  document.getElementById('btn-piloto-pdp')?.addEventListener('click', () => {
-    window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
-  });
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
 
   document.getElementById('sede').addEventListener('change', e => {

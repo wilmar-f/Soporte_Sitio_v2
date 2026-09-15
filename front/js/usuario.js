@@ -23,8 +23,7 @@ import {
   resetDiagnosticoInteractivo,
 } from './diagnostico-logica.js';
 import { formatearUltimoAcceso } from './ultimo-acceso.js';
-import { renderPanelNoticias, esRolAdministrador } from './noticias.js';
-import { renderPanelEstadisticas } from './estadisticas.js';
+import { esRolAdministrador } from './noticias.js';
 import { renderPanelUsuarios } from './admin-usuarios.js';
 
 const MAX_EVIDENCIAS = 4;
@@ -303,17 +302,8 @@ function renderInfoUsuario() {
   const avatarEl = document.getElementById('user-avatar');
   avatarEl.textContent = (nombreCompleto || 'U').charAt(0).toUpperCase();
 
-  const btnNoticias = document.getElementById('btn-noticias');
-  setSidebarBtnVisible(btnNoticias, esAdministrador());
-
-  const btnEstadisticas = document.getElementById('btn-estadisticas');
-  setSidebarBtnVisible(btnEstadisticas, esAdministrador());
-
   const btnUsuarios = document.getElementById('btn-usuarios');
   setSidebarBtnVisible(btnUsuarios, esAdministrador());
-
-  const btnDiagnosticoBeta = document.getElementById('btn-diagnostico-beta');
-  setSidebarBtnVisible(btnDiagnosticoBeta, esAdministrador());
 }
 
 /* ── Carga datos maestros al iniciar ───────────────── */
@@ -377,30 +367,12 @@ function registrarEventosSidebar() {
   });
 
   const btnDiagnosticoBeta = document.getElementById('btn-diagnostico-beta');
-  if (btnDiagnosticoBeta && esAdministrador()) {
+  if (btnDiagnosticoBeta) {
     btnDiagnosticoBeta.addEventListener('click', (e) => {
       e.preventDefault();
       activarBotonSidebar('btn-diagnostico-beta');
       setPanelActivo('diagnostico-beta');
       renderFormularioDiagnostico('beta');
-    });
-  }
-
-  const btnNoticias = document.getElementById('btn-noticias');
-  if (btnNoticias && esAdministrador()) {
-    btnNoticias.addEventListener('click', () => {
-      activarBotonSidebar('btn-noticias');
-      setPanelActivo('noticias');
-      renderPanelNoticias(tokenGuardado);
-    });
-  }
-
-  const btnEstadisticas = document.getElementById('btn-estadisticas');
-  if (btnEstadisticas && esAdministrador()) {
-    btnEstadisticas.addEventListener('click', () => {
-      activarBotonSidebar('btn-estadisticas');
-      setPanelActivo('estadisticas');
-      renderPanelEstadisticas(tokenGuardado);
     });
   }
 
@@ -427,13 +399,6 @@ function registrarEventosSidebar() {
     });
   }
 
-  const btnPilotoPdp = document.getElementById('btn-piloto-pdp');
-  if (btnPilotoPdp) {
-    btnPilotoPdp.addEventListener('click', () => {
-      window.open('https://bcandresf.github.io/bitacorapdp/', '_blank', 'noopener,noreferrer');
-    });
-  }
-
   document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
 }
 
@@ -451,25 +416,12 @@ function abrirPanelDesdeQuery() {
   }
 
   if (panel === 'diagnostico-beta') {
-    if (!esAdministrador()) return;
     activarBotonSidebar('btn-diagnostico-beta');
     setPanelActivo('diagnostico-beta');
     renderFormularioDiagnostico('beta');
     return;
   }
 
-  if (panel === 'noticias' && esAdministrador()) {
-    activarBotonSidebar('btn-noticias');
-    setPanelActivo('noticias');
-    renderPanelNoticias(tokenGuardado);
-    return;
-  }
-  if (panel === 'estadisticas' && esAdministrador()) {
-    activarBotonSidebar('btn-estadisticas');
-    setPanelActivo('estadisticas');
-    renderPanelEstadisticas(tokenGuardado);
-    return;
-  }
   if (panel === 'usuarios' && esAdministrador()) {
     activarBotonSidebar('btn-usuarios');
     setPanelActivo('usuarios');
@@ -713,7 +665,7 @@ function renderFormularioDiagnostico(modo = 'clasico') {
 
   panel.innerHTML = `
     <form id="form-diagnostico" class="formulario-diagnostico" novalidate>
-      <h2>${modoFormulario === 'beta' ? 'Formulario de Diagnóstico Beta' : 'Formulario de Diagnóstico - Soporte en Sitio'}</h2>
+      <h2>${modoFormulario === 'beta' ? 'Formulario de Diagnóstico IA' : 'Formulario de Diagnóstico - Soporte en Sitio'}</h2>
 
       <!-- ═══════════ SECCIÓN: INFORMACIÓN GENERAL ═════════════ -->
       <fieldset class="seccion">
@@ -901,6 +853,8 @@ const CAMPOS_IA_BETA = [
   { textareaId: 'diagnostico-final', previewId: 'ia-preview-diagnostico-final', nombre: 'Vista previa del diagnóstico' },
 ];
 
+const iaRequests = new Map();
+
 function limpiarPreviewIA(preview) {
   if (!preview) return;
   preview.textContent = '';
@@ -932,12 +886,20 @@ async function mejorarConIA({ textareaId, previewId, contexto }) {
     return;
   }
 
+  const previo = iaRequests.get(previewId);
+  previo?.controller.abort();
+  const controller = new AbortController();
+  const gen = (previo?.gen || 0) + 1;
+  iaRequests.set(previewId, { controller, gen });
+
   preview.dataset.iaReady = '0';
   preview.classList.remove('invalido');
   preview.textContent = '⏳ Redactando diagnóstico profesional...';
 
   const btn = document.querySelector(`.btn-mejorar-ia[data-preview="${previewId}"]`);
   if (btn) btn.disabled = true;
+
+  const esActual = () => iaRequests.get(previewId)?.gen === gen;
 
   try {
     const headers = { 'Content-Type': 'application/json' };
@@ -947,18 +909,22 @@ async function mejorarConIA({ textareaId, previewId, contexto }) {
       method: 'POST',
       headers,
       body: JSON.stringify({ contexto, borrador }),
+      signal: controller.signal,
     });
     const data = await res.json().catch(() => ({}));
+    if (!esActual()) return;
     if (!res.ok) {
       throw new Error(data.error || `Error ${res.status}`);
     }
     preview.textContent = String(data.texto || '').trim();
     preview.dataset.iaReady = '1';
   } catch (err) {
+    if (err?.name === 'AbortError') return;
+    if (!esActual()) return;
     limpiarPreviewIA(preview);
     toast(err.message || 'No se pudo mejorar el texto con IA.', 'error');
   } finally {
-    if (btn) btn.disabled = false;
+    if (esActual() && btn) btn.disabled = false;
   }
 }
 
@@ -967,7 +933,11 @@ function registrarEventosIA() {
     const ta = document.getElementById(textareaId);
     if (!ta) return;
     ta.addEventListener('input', () => {
+      const inflight = iaRequests.get(previewId);
+      inflight?.controller.abort();
       limpiarPreviewIA(document.getElementById(previewId));
+      const btn = document.querySelector(`.btn-mejorar-ia[data-preview="${previewId}"]`);
+      if (btn) btn.disabled = false;
     });
   });
 
