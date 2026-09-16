@@ -281,7 +281,7 @@ async function importarActivosDesdeTxt(texto) {
       tipo,
       marca: equipo.fabricante || '',
       modelo: equipo.modelo || '',
-      serie: equipo.serial || serie,
+      serie: String(equipo.serial || serie).toUpperCase(),
       etiqueta: equipo.etiqueta || '',
       otros: fila.otros || '',
       software: fila.software || '',
@@ -382,7 +382,7 @@ async function autocompletarEquipoPorSerie(consulta, { reintentar = true } = {})
   const marca = document.getElementById('act-marca');
   const modelo = document.getElementById('act-modelo');
   const etiqueta = document.getElementById('act-etiqueta');
-  if (serie) serie.value = equipo.serial || '';
+  if (serie) serie.value = String(equipo.serial || '').toUpperCase();
   if (marca) marca.value = equipo.fabricante || '';
   if (modelo) modelo.value = equipo.modelo || '';
   if (etiqueta) etiqueta.value = equipo.etiqueta || '';
@@ -997,17 +997,17 @@ function registrarEventosFormulario() {
       toast('No se pudo leer el archivo.', 'error');
     }
   });
-  document.getElementById('btn-buscar-activo')?.addEventListener('click', () => {
+  const formActa = document.getElementById('form-acta');
+  formActa?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !formActa.contains(btn)) return;
+    if (btn.id === 'btn-buscar-activo') ejecutarBusquedaActivo();
+    if (btn.id === 'btn-borrar-activo') borrarBusquedaActivo();
+  });
+  formActa?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.target?.id !== 'act-busqueda-equipo') return;
+    e.preventDefault();
     ejecutarBusquedaActivo();
-  });
-  document.getElementById('btn-borrar-activo')?.addEventListener('click', () => {
-    borrarBusquedaActivo();
-  });
-  document.getElementById('act-busqueda-equipo')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      ejecutarBusquedaActivo();
-    }
   });
   document.getElementById('ent-cedula')?.addEventListener('input', () => {
     limpiarCamposPersona('ent');

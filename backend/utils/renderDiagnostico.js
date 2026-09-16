@@ -88,6 +88,7 @@ function prepareView(raw = {}) {
   view.hd = formatHdPdf(view.hd);
   view.nombreTecnico = toTitleCase(view.nombreTecnico);
   view.cargoTecnico = toTitleCase(view.cargoTecnico);
+  view.serial = String(view.serial || '').toUpperCase();
 
   const firma = raw.firmaBase64 && String(raw.firmaBase64).startsWith('data:')
     ? String(raw.firmaBase64)

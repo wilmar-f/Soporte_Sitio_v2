@@ -270,15 +270,20 @@ fieldset.seccion legend {
   display: flex;
   gap: 8px;
   align-items: stretch;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  position: relative;
 }
 .campo-busqueda-equipo__fila input {
-  flex: 1 1 160px;
+  width: auto;
+  flex: 1 1 auto;
   min-width: 0;
 }
 .campo-busqueda-equipo__fila .btn {
   flex: 0 0 auto;
+  flex-shrink: 0;
   align-self: stretch;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Firma: tabs ─────────────────────────────────── */

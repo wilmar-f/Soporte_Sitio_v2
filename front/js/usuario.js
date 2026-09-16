@@ -549,7 +549,7 @@ function limpiarCamposEquipo() {
 
 function aplicarEquipoEnFormulario(equipo) {
   const serialEl = document.getElementById('serial');
-  if (serialEl) serialEl.value = equipo.serial || '';
+  if (serialEl) serialEl.value = String(equipo.serial || '').toUpperCase();
   document.getElementById('marca').value    = (equipo.fabricante || '').toUpperCase();
   document.getElementById('modelo').value   = (equipo.modelo || '').toUpperCase();
   document.getElementById('etiqueta').value = equipo.etiqueta || '';
@@ -1044,17 +1044,17 @@ function registrarEventosFormulario() {
     }
   });
 
-  document.getElementById('btn-buscar-equipo')?.addEventListener('click', () => {
+  const formDiag = document.getElementById('form-diagnostico');
+  formDiag?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !formDiag.contains(btn)) return;
+    if (btn.id === 'btn-buscar-equipo') ejecutarBusquedaEquipo();
+    if (btn.id === 'btn-borrar-equipo') borrarBusquedaEquipo();
+  });
+  formDiag?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.target?.id !== 'busqueda-equipo') return;
+    e.preventDefault();
     ejecutarBusquedaEquipo();
-  });
-  document.getElementById('btn-borrar-equipo')?.addEventListener('click', () => {
-    borrarBusquedaEquipo();
-  });
-  document.getElementById('busqueda-equipo')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      ejecutarBusquedaEquipo();
-    }
   });
 
   if (modoFormulario === 'clasico') {
@@ -1506,7 +1506,7 @@ function recopilarValores() {
     cedula:            get('cedula-usuario'),
     ubicacionFisica:   get('ubicacion-fisica'),
     marca:             get('marca').toUpperCase(),
-    serial:            get('serial'),
+    serial:            get('serial').toUpperCase(),
     modelo:            get('modelo').toUpperCase(),
     etiqueta:          get('etiqueta'),
     procesador:        get('procesador'),
