@@ -8,7 +8,7 @@ const SYSTEM_INSTRUCTION = [
   'No copies títulos, nombres de sección ni la palabra Sección.',
 ].join(' ');
 
-const MODELOS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+const MODELOS = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-2.0-flash'];
 
 function getClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -47,6 +47,12 @@ function extraerTexto(response) {
     .trim();
 }
 
+function esError404(err) {
+  const status = Number(err?.status ?? err?.code);
+  if (status === 404) return true;
+  return /not found|404|NOT_FOUND/i.test(String(err?.message || ''));
+}
+
 function debeSaltarModelo(err) {
   const status = Number(err?.status ?? err?.code);
   if (status === 404 || status === 429 || status === 503 || status === 504) return true;
@@ -67,6 +73,42 @@ function mensajeUsuario(err) {
   return 'No se pudo redactar el texto. Intenta de nuevo.';
 }
 
+function idModelo(raw) {
+  return String(raw || '').replace(/^models\//, '').trim();
+}
+
+async function listarNombresFlash(ai) {
+  const nombres = [];
+  try {
+    const listed = await ai.models.list({ config: { pageSize: 80 } });
+    const items = [];
+    if (listed && typeof listed[Symbol.asyncIterator] === 'function') {
+      for await (const m of listed) items.push(m);
+    } else if (Array.isArray(listed)) {
+      items.push(...listed);
+    } else if (Array.isArray(listed?.page)) {
+      items.push(...listed.page);
+    } else if (Array.isArray(listed?.models)) {
+      items.push(...listed.models);
+    }
+
+    for (const m of items) {
+      const id = idModelo(m?.name || m?.baseModelId || '');
+      const methods = m?.supportedActions || m?.supportedGenerationMethods || [];
+      const okGen = !methods.length
+        || methods.includes('generateContent')
+        || methods.includes('generate_content');
+      if (okGen && /flash/i.test(id) && !/embed|tts|image|live/i.test(id)) {
+        nombres.push(id);
+      }
+    }
+  } catch (err) {
+    console.error('Error en Gemini API:', err.message, err.status);
+  }
+  console.error('Modelos flash listados:', nombres.slice(0, 20).join(', ') || '(ninguno)');
+  return nombres;
+}
+
 async function generarTexto(ai, model, contexto, borrador) {
   const instruction = contexto
     ? `${SYSTEM_INSTRUCTION} El borrador corresponde a «${contexto}»; no incluyas ese título en la respuesta.`
@@ -77,7 +119,7 @@ async function generarTexto(ai, model, contexto, borrador) {
     temperature: 0.2,
     httpOptions: { timeout: 20000 },
   };
-  if (model.startsWith('gemini-3')) {
+  if (String(model).startsWith('gemini-3')) {
     config.thinkingConfig = { thinkingLevel: 'minimal' };
   }
 
@@ -103,28 +145,56 @@ exports.redactar = async (req, res) => {
 
   const ai = getClient();
   let ultimoError = null;
+  const intentados = new Set();
+  let todos404 = true;
 
-  for (const model of MODELOS) {
-    try {
-      const texto = await generarTexto(ai, model, contexto, borrador);
-      if (texto) {
-        return res.json({ texto });
+  async function intentarModelos(lista) {
+    for (const model of lista) {
+      const id = idModelo(model);
+      if (!id || intentados.has(id)) continue;
+      intentados.add(id);
+      try {
+        const texto = await generarTexto(ai, id, contexto, borrador);
+        if (texto) {
+          return texto;
+        }
+        ultimoError = new Error('empty');
+        todos404 = false;
+      } catch (err) {
+        ultimoError = err;
+        console.error('Error en Gemini API:', err.message, err.status);
+        if (!esError404(err)) todos404 = false;
+        if (debeSaltarModelo(err)) {
+          continue;
+        }
+        await esperar(1000);
       }
-      ultimoError = new Error('empty');
-    } catch (err) {
-      ultimoError = err;
-      if (debeSaltarModelo(err)) {
-        continue;
-      }
-      await esperar(1000);
     }
+    return null;
+  }
+
+  let texto = await intentarModelos(MODELOS);
+
+  if (!texto && todos404) {
+    const extras = await listarNombresFlash(ai);
+    texto = await intentarModelos(extras);
+  }
+
+  if (texto) {
+    return res.json({ texto });
   }
 
   if (ultimoError && ultimoError.message === 'empty') {
     return res.status(502).json({ error: 'La IA no devolvió texto. Intenta de nuevo.' });
   }
 
-  console.error('Error en /api/redactar:', ultimoError?.status ?? ultimoError?.code ?? ultimoError?.message);
+  if (esError404(ultimoError) || todos404) {
+    return res.status(404).json({
+      error: 'El modelo configurado no está disponible en la API.',
+    });
+  }
+
+  console.error('Error en Gemini API:', ultimoError?.message, ultimoError?.status);
   return res.status(502).json({
     error: mensajeUsuario(ultimoError),
   });
