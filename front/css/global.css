@@ -266,6 +266,21 @@ fieldset.seccion legend {
 }
 .campos-grid .campo-full { grid-column: 1 / -1; }
 
+.campo-busqueda-equipo__fila {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.campo-busqueda-equipo__fila input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.campo-busqueda-equipo__fila .btn {
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+
 /* ── Firma: tabs ─────────────────────────────────── */
 .firma-tabs {
   display: flex;

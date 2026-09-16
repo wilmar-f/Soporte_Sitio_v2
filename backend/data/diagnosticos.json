@@ -63,5 +63,18 @@
     "tipoDiagnostico": "BETA",
     "serial": "1HF5110TR8",
     "etiqueta": "0049552"
+  },
+  {
+    "id": "6ad3c7cf-a878-42c3-98c9-1c2c225e5c17",
+    "createdAt": "2026-09-15T18:39:46.268Z",
+    "fecha": "2026-09-15",
+    "sede": "ALKOMPRAR AKT LA 33 #2",
+    "sedeCodigo": "ALNIB",
+    "ubicacionFisica": "AK170",
+    "nombreTecnico": "Administrador",
+    "cedulaTecnico": "1",
+    "tipoDiagnostico": "BETA",
+    "serial": "1HF5110TR8",
+    "etiqueta": "0049552"
   }
 ]

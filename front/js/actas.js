@@ -146,6 +146,31 @@ function buscarEquipoPorSerial(serial) {
   return datosInventario.find((e) => normalizarSerialBusqueda(e.serial) === limpio) || null;
 }
 
+function buscarEquipoEnInventario(valor) {
+  const limpio = normalizarSerialBusqueda(valor);
+  if (!limpio) return { ok: false, motivo: 'vacio' };
+
+  const equipos = [];
+  const vistos = new Set();
+  const agregar = (e) => {
+    const key = normalizarSerialBusqueda(e.serial);
+    if (!key || vistos.has(key)) return;
+    vistos.add(key);
+    equipos.push(e);
+  };
+
+  datosInventario.forEach((e) => {
+    if (normalizarSerialBusqueda(e.serial) === limpio) agregar(e);
+  });
+  datosInventario.forEach((e) => {
+    if (normalizarSerialBusqueda(e.etiqueta) === limpio) agregar(e);
+  });
+
+  if (equipos.length === 0) return { ok: false, motivo: 'no-encontrado' };
+  if (equipos.length > 1) return { ok: false, motivo: 'ambiguo' };
+  return { ok: true, equipo: equipos[0] };
+}
+
 function normTipoEquipo(val) {
   return String(val ?? '')
     .trim()
@@ -293,14 +318,14 @@ function renderErroresTxt(errores) {
 }
 
 function setCamposEquipoReadonly(readonly) {
-  ['act-marca', 'act-modelo', 'act-etiqueta'].forEach((id) => {
+  ['act-serie', 'act-marca', 'act-modelo', 'act-etiqueta'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.readOnly = readonly;
   });
 }
 
 function limpiarCamposEquipoInventario() {
-  ['act-marca', 'act-modelo', 'act-etiqueta'].forEach((id) => {
+  ['act-serie', 'act-marca', 'act-modelo', 'act-etiqueta'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
       el.value = '';
@@ -311,11 +336,22 @@ function limpiarCamposEquipoInventario() {
   serieInventarioOk = false;
 }
 
-async function autocompletarEquipoPorSerie(serie, { reintentar = true } = {}) {
-  const inputSerie = document.getElementById('act-serie');
+function borrarBusquedaActivo() {
+  const busqueda = document.getElementById('act-busqueda-equipo');
+  if (busqueda) {
+    busqueda.value = '';
+    busqueda.classList.remove('invalido');
+  }
+  limpiarCamposEquipoInventario();
+}
+
+async function autocompletarEquipoPorSerie(consulta, { reintentar = true } = {}) {
+  const inputBusqueda = document.getElementById('act-busqueda-equipo');
   await inventarioListo;
-  if (!serie) {
+  if (!String(consulta || '').trim()) {
     limpiarCamposEquipoInventario();
+    if (inputBusqueda) marcarInvalido(inputBusqueda);
+    toast('Escribe el serial o la etiqueta para buscar.', 'advertencia');
     return false;
   }
   if (!datosInventario.length && reintentar) {
@@ -326,27 +362,40 @@ async function autocompletarEquipoPorSerie(serie, { reintentar = true } = {}) {
       return false;
     }
   }
-  let equipo = buscarEquipoPorSerial(serie);
-  if (!equipo && reintentar) {
+  let resultado = buscarEquipoEnInventario(consulta);
+  if (resultado.motivo === 'no-encontrado' && reintentar) {
     await recargarInventario();
-    equipo = buscarEquipoPorSerial(serie);
+    resultado = buscarEquipoEnInventario(consulta);
   }
-  if (!equipo) {
+  if (!resultado.ok) {
     limpiarCamposEquipoInventario();
-    marcarInvalido(inputSerie);
-    toast('El serial no existe en el inventario.', 'error');
+    if (inputBusqueda) marcarInvalido(inputBusqueda);
+    if (resultado.motivo === 'ambiguo') {
+      toast('Hay más de un equipo con ese dato. Usa un serial o etiqueta único.', 'advertencia');
+    } else {
+      toast('No se encontró ese serial o etiqueta en el inventario.', 'error');
+    }
     return false;
   }
+  const equipo = resultado.equipo;
+  const serie = document.getElementById('act-serie');
   const marca = document.getElementById('act-marca');
   const modelo = document.getElementById('act-modelo');
   const etiqueta = document.getElementById('act-etiqueta');
+  if (serie) serie.value = equipo.serial || '';
   if (marca) marca.value = equipo.fabricante || '';
   if (modelo) modelo.value = equipo.modelo || '';
   if (etiqueta) etiqueta.value = equipo.etiqueta || '';
   setCamposEquipoReadonly(true);
   serieInventarioOk = true;
-  inputSerie?.classList.remove('invalido');
+  inputBusqueda?.classList.remove('invalido');
+  serie?.classList.remove('invalido');
   return true;
+}
+
+async function ejecutarBusquedaActivo() {
+  const consulta = get('act-busqueda-equipo');
+  await autocompletarEquipoPorSerie(consulta);
 }
 
 function normalizarCedulaBusqueda(cedula) {
@@ -505,7 +554,14 @@ function renderFormularioActas() {
       <fieldset class="seccion">
         <legend>Datos del activo</legend>
         <div class="campos-grid">
-          <div class="campo"><label for="act-serie">Serie *</label><input type="text" id="act-serie" required></div>
+          <div class="campo campo-full campo-busqueda-equipo">
+            <label for="act-busqueda-equipo">Buscar activo *</label>
+            <div class="campo-busqueda-equipo__fila">
+              <input type="text" id="act-busqueda-equipo" placeholder="Serial o etiqueta" autocomplete="off">
+              <button type="button" class="btn btn--primario" id="btn-buscar-activo">Buscar</button>
+              <button type="button" class="btn btn--outline" id="btn-borrar-activo">Borrar</button>
+            </div>
+          </div>
           <div class="campo">
             <label for="act-tipo">Tipo de equipo *</label>
             <select id="act-tipo" required>
@@ -513,9 +569,10 @@ function renderFormularioActas() {
               ${TIPOS_EQUIPO.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}
             </select>
           </div>
-          <div class="campo"><label for="act-marca">Marca *</label><input type="text" id="act-marca" placeholder="Se autocompleta por serie" readonly required></div>
-          <div class="campo"><label for="act-modelo">Modelo *</label><input type="text" id="act-modelo" placeholder="Se autocompleta por serie" readonly required></div>
-          <div class="campo"><label for="act-etiqueta">Nº etiqueta *</label><input type="text" id="act-etiqueta" placeholder="Se autocompleta por serie" readonly required></div>
+          <div class="campo"><label for="act-serie">Serie *</label><input type="text" id="act-serie" placeholder="Se autocompleta por serial" readonly required></div>
+          <div class="campo"><label for="act-marca">Marca *</label><input type="text" id="act-marca" placeholder="Se autocompleta por serial" readonly required></div>
+          <div class="campo"><label for="act-modelo">Modelo *</label><input type="text" id="act-modelo" placeholder="Se autocompleta por serial" readonly required></div>
+          <div class="campo"><label for="act-etiqueta">Nº etiqueta *</label><input type="text" id="act-etiqueta" placeholder="Se autocompleta por serial" readonly required></div>
           <div class="campo"><label for="act-otros">Otros (IP / # puertos / etc.)</label><input type="text" id="act-otros"></div>
           <div class="campo campo-full"><label for="act-software">Relación de software fuera del inventario</label><input type="text" id="act-software"></div>
         </div>
@@ -619,7 +676,7 @@ function activoCompleto(a) {
 }
 
 function limpiarBloqueActivo() {
-  ['act-tipo', 'act-marca', 'act-modelo', 'act-serie', 'act-etiqueta', 'act-otros', 'act-software']
+  ['act-busqueda-equipo', 'act-tipo', 'act-marca', 'act-modelo', 'act-serie', 'act-etiqueta', 'act-otros', 'act-software']
     .forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
@@ -663,14 +720,15 @@ function renderPreviewActivos() {
 async function agregarActivoDesdeForm() {
   const a = leerActivoDelForm();
   if (!activoCompleto(a)) {
-    ['act-tipo', 'act-marca', 'act-modelo', 'act-serie', 'act-etiqueta'].forEach((id) => {
-      if (!get(id)) marcarInvalido(document.getElementById(id));
+    ['act-busqueda-equipo', 'act-tipo', 'act-marca', 'act-modelo', 'act-serie', 'act-etiqueta'].forEach((id) => {
+      if (!get(id) && id !== 'act-busqueda-equipo') marcarInvalido(document.getElementById(id));
     });
+    if (!get('act-serie')) marcarInvalido(document.getElementById('act-busqueda-equipo'));
     toast('Completa tipo, marca, modelo, serie y etiqueta para agregar el activo.', 'advertencia');
     return false;
   }
   if (!serieInventarioOk) {
-    const ok = await autocompletarEquipoPorSerie(a.serie);
+    const ok = await autocompletarEquipoPorSerie(get('act-busqueda-equipo') || a.serie);
     if (!ok) return false;
   }
   activos.push({ ...leerActivoDelForm(), inventarioOk: true });
@@ -825,6 +883,7 @@ function validarFormulario() {
     ok = false;
   } else if (!serieInventarioOk && activoCompleto(leerActivoDelForm())) {
     marcarInvalido(document.getElementById('act-serie'));
+    marcarInvalido(document.getElementById('act-busqueda-equipo'));
     toast('La serie del activo debe existir en el inventario.', 'error');
     ok = false;
   }
@@ -870,7 +929,7 @@ function recopilarValores() {
 async function generarPDF() {
   const draft = leerActivoDelForm();
   if (activoCompleto(draft) && !serieInventarioOk) {
-    const okSerie = await autocompletarEquipoPorSerie(draft.serie);
+    const okSerie = await autocompletarEquipoPorSerie(get('act-busqueda-equipo') || draft.serie);
     if (!okSerie) return;
   }
   if (!validarFormulario()) return;
@@ -938,17 +997,17 @@ function registrarEventosFormulario() {
       toast('No se pudo leer el archivo.', 'error');
     }
   });
-  document.getElementById('act-serie')?.addEventListener('input', () => {
-    if (serieInventarioOk) limpiarCamposEquipoInventario();
+  document.getElementById('btn-buscar-activo')?.addEventListener('click', () => {
+    ejecutarBusquedaActivo();
   });
-  document.getElementById('act-serie')?.addEventListener('blur', async () => {
-    const serie = get('act-serie');
-    if (!serie) {
-      limpiarCamposEquipoInventario();
-      setCamposEquipoReadonly(true);
-      return;
+  document.getElementById('btn-borrar-activo')?.addEventListener('click', () => {
+    borrarBusquedaActivo();
+  });
+  document.getElementById('act-busqueda-equipo')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      ejecutarBusquedaActivo();
     }
-    await autocompletarEquipoPorSerie(serie);
   });
   document.getElementById('ent-cedula')?.addEventListener('input', () => {
     limpiarCamposPersona('ent');

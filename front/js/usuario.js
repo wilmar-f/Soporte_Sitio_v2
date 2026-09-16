@@ -493,6 +493,31 @@ function buscarEquipoPorSerial(serial) {
   return encontrado || null;
 }
 
+function buscarEquipoEnInventario(valor) {
+  const limpio = normalizarSerialBusqueda(valor);
+  if (!limpio) return { ok: false, motivo: 'vacio' };
+
+  const equipos = [];
+  const vistos = new Set();
+  const agregar = (e) => {
+    const key = normalizarSerialBusqueda(e.serial);
+    if (!key || vistos.has(key)) return;
+    vistos.add(key);
+    equipos.push(e);
+  };
+
+  datosInventario.forEach((e) => {
+    if (normalizarSerialBusqueda(e.serial) === limpio) agregar(e);
+  });
+  datosInventario.forEach((e) => {
+    if (normalizarSerialBusqueda(e.etiqueta) === limpio) agregar(e);
+  });
+
+  if (equipos.length === 0) return { ok: false, motivo: 'no-encontrado' };
+  if (equipos.length > 1) return { ok: false, motivo: 'ambiguo' };
+  return { ok: true, equipo: equipos[0] };
+}
+
 /** Marca inputs de equipo como solo lectura (autocompletados por serial). */
 const CAMPOS_EQUIPO_SERIAL = [
   'marca', 'modelo', 'etiqueta',
@@ -516,20 +541,38 @@ function bloquearCamposEquipo() {
 
 /** Limpia Marca, Modelo y Etiqueta tras cambio o serial no encontrado. */
 function limpiarCamposEquipo() {
-  CAMPOS_EQUIPO_SERIAL.forEach(id => {
+  ['serial', ...CAMPOS_EQUIPO_SERIAL].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
 }
 
+function aplicarEquipoEnFormulario(equipo) {
+  const serialEl = document.getElementById('serial');
+  if (serialEl) serialEl.value = equipo.serial || '';
+  document.getElementById('marca').value    = (equipo.fabricante || '').toUpperCase();
+  document.getElementById('modelo').value   = (equipo.modelo || '').toUpperCase();
+  document.getElementById('etiqueta').value = equipo.etiqueta || '';
+  document.getElementById('procesador').value = valorONoAplica(equipo.procesador);
+  document.getElementById('version-so').value = valorONoAplica(equipo.versionSO);
+  document.getElementById('ram').value = valorONoAplica(equipo.ram);
+  document.getElementById('nombre-equipo').value = valorONoAplica(equipo.nombreEquipo);
+  document.getElementById('sistema-operativo').value = valorONoAplica(equipo.sistemaOperativo);
+  document.getElementById('hd').value = valorONoAplica(equipo.hd);
+
+  ['busqueda-equipo', 'marca', 'modelo', 'etiqueta', 'serial', ...CAMPOS_EQUIPO_SERIAL].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) limpiarInvalido(el);
+  });
+}
+
 /**
- * Autocompleta Marca, Modelo y Etiqueta según serial.
- * Marca y Modelo se normalizan a MAYÚSCULAS.
- * @returns {Promise<boolean>} true si el serial existe en inventario
+ * Autocompleta el equipo según serial o etiqueta del buscador.
+ * @returns {Promise<boolean>}
  */
-async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) {
+async function autocompletarEquipoPorSerial(consulta, { reintentar = true } = {}) {
   const gen = ++busquedaSerialGen;
-  const inputSerial = document.getElementById('serial');
+  const inputBusqueda = document.getElementById('busqueda-equipo');
   await inventarioListo;
   if (gen !== busquedaSerialGen) return false;
 
@@ -542,39 +585,54 @@ async function autocompletarEquipoPorSerial(serial, { reintentar = true } = {}) 
     }
   }
 
-  let equipo = buscarEquipoPorSerial(serial);
+  let resultado = buscarEquipoEnInventario(consulta);
 
-  if (!equipo && reintentar && datosInventario.length === 0) {
+  if (resultado.motivo === 'no-encontrado' && reintentar) {
     await recargarInventario();
     if (gen !== busquedaSerialGen) return false;
-    equipo = buscarEquipoPorSerial(serial);
+    resultado = buscarEquipoEnInventario(consulta);
   }
 
   if (gen !== busquedaSerialGen) return false;
 
-  if (!equipo) {
+  if (!resultado.ok) {
     limpiarCamposEquipo();
-    if (inputSerial) marcarInvalido(inputSerial);
-    toast('El serial no existe en el inventario.', 'error');
+    if (inputBusqueda) marcarInvalido(inputBusqueda);
+    if (resultado.motivo === 'vacio') {
+      toast('Escribe el serial o la etiqueta para buscar.', 'advertencia');
+    } else if (resultado.motivo === 'ambiguo') {
+      toast('Hay más de un equipo con ese dato. Usa un serial o etiqueta único.', 'advertencia');
+    } else {
+      toast('No se encontró ese serial o etiqueta en el inventario.', 'error');
+    }
     return false;
   }
 
-  document.getElementById('marca').value    = (equipo.fabricante || '').toUpperCase();
-  document.getElementById('modelo').value   = (equipo.modelo || '').toUpperCase();
-  document.getElementById('etiqueta').value = equipo.etiqueta || '';
-  document.getElementById('procesador').value = valorONoAplica(equipo.procesador);
-  document.getElementById('version-so').value = valorONoAplica(equipo.versionSO);
-  document.getElementById('ram').value = valorONoAplica(equipo.ram);
-  document.getElementById('nombre-equipo').value = valorONoAplica(equipo.nombreEquipo);
-  document.getElementById('sistema-operativo').value = valorONoAplica(equipo.sistemaOperativo);
-  document.getElementById('hd').value = valorONoAplica(equipo.hd);
-
-  ['marca', 'modelo', 'etiqueta', 'serial', ...CAMPOS_EQUIPO_SERIAL].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) limpiarInvalido(el);
-  });
-
+  aplicarEquipoEnFormulario(resultado.equipo);
   return true;
+}
+
+async function ejecutarBusquedaEquipo() {
+  const inputBusqueda = document.getElementById('busqueda-equipo');
+  const consulta = inputBusqueda ? inputBusqueda.value.trim() : '';
+  if (!consulta) {
+    busquedaSerialGen += 1;
+    limpiarCamposEquipo();
+    if (inputBusqueda) marcarInvalido(inputBusqueda);
+    toast('Escribe el serial o la etiqueta para buscar.', 'advertencia');
+    return;
+  }
+  await autocompletarEquipoPorSerial(consulta);
+}
+
+function borrarBusquedaEquipo() {
+  busquedaSerialGen += 1;
+  const inputBusqueda = document.getElementById('busqueda-equipo');
+  if (inputBusqueda) {
+    inputBusqueda.value = '';
+    limpiarInvalido(inputBusqueda);
+  }
+  limpiarCamposEquipo();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -701,12 +759,14 @@ function renderFormularioDiagnostico(modo = 'clasico') {
       <fieldset class="seccion">
         <legend>Información del Equipo</legend>
         <div class="campos-grid">
-          <div class="campo">
-            <label for="ubicacion-fisica">Ubicación física *</label>
-            <select id="ubicacion-fisica" name="ubicacionFisica" required>
-              <option value="">— Selecciona código —</option>
-              ${opsCodigos}
-            </select>
+          <div class="campo campo-full campo-busqueda-equipo">
+            <label for="busqueda-equipo">Buscar equipo *</label>
+            <div class="campo-busqueda-equipo__fila">
+              <input type="text" id="busqueda-equipo" name="busquedaEquipo"
+                placeholder="Serial o etiqueta" autocomplete="off">
+              <button type="button" class="btn btn--primario" id="btn-buscar-equipo">Buscar</button>
+              <button type="button" class="btn btn--outline" id="btn-borrar-equipo">Borrar</button>
+            </div>
           </div>
           <div class="campo">
             <label for="marca">Marca *</label>
@@ -714,7 +774,7 @@ function renderFormularioDiagnostico(modo = 'clasico') {
           </div>
           <div class="campo">
             <label for="serial">Serial *</label>
-            <input type="text" id="serial" name="serial" placeholder="Ej: MXL53914RF" required>
+            <input type="text" id="serial" name="serial" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
             <label for="modelo">Modelo *</label>
@@ -745,6 +805,10 @@ function renderFormularioDiagnostico(modo = 'clasico') {
             <input type="text" id="sistema-operativo" name="sistemaOperativo" placeholder="Se autocompleta por serial" readonly required>
           </div>
           <div class="campo">
+            <label for="hd">HD *</label>
+            <input type="text" id="hd" name="hd" placeholder="Se autocompleta por serial" readonly required>
+          </div>
+          <div class="campo">
             <label for="version-office">Versión de Office *</label>
             <select id="version-office" name="versionOffice" required>
               <option value="">— Selecciona —</option>
@@ -753,8 +817,11 @@ function renderFormularioDiagnostico(modo = 'clasico') {
             </select>
           </div>
           <div class="campo">
-            <label for="hd">HD *</label>
-            <input type="text" id="hd" name="hd" placeholder="Se autocompleta por serial" readonly required>
+            <label for="ubicacion-fisica">Ubicación física *</label>
+            <select id="ubicacion-fisica" name="ubicacionFisica" required>
+              <option value="">— Selecciona código —</option>
+              ${opsCodigos}
+            </select>
           </div>
         </div>
       </fieldset>
@@ -977,16 +1044,17 @@ function registrarEventosFormulario() {
     }
   });
 
-  // Autocompletado: Marca, Modelo y Etiqueta por serial
-  const inputSerial = document.getElementById('serial');
-  inputSerial.addEventListener('blur', async () => {
-    const serial = inputSerial.value.trim();
-    if (!serial) {
-      busquedaSerialGen += 1;
-      limpiarCamposEquipo();
-      return;
+  document.getElementById('btn-buscar-equipo')?.addEventListener('click', () => {
+    ejecutarBusquedaEquipo();
+  });
+  document.getElementById('btn-borrar-equipo')?.addEventListener('click', () => {
+    borrarBusquedaEquipo();
+  });
+  document.getElementById('busqueda-equipo')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      ejecutarBusquedaEquipo();
     }
-    await autocompletarEquipoPorSerial(serial);
   });
 
   if (modoFormulario === 'clasico') {
@@ -1297,6 +1365,10 @@ async function validarFormulario() {
     const val = el.value.trim();
     if (!val) {
       marcarInvalido(el);
+      if (id === 'serial') {
+        const busqueda = document.getElementById('busqueda-equipo');
+        if (busqueda) marcarInvalido(busqueda);
+      }
       errores.push(nombre);
       valido = false;
     }
@@ -1329,6 +1401,8 @@ async function validarFormulario() {
     }
     if (!equipoSerial) {
       marcarInvalido(serialEl);
+      const busqueda = document.getElementById('busqueda-equipo');
+      if (busqueda) marcarInvalido(busqueda);
       toast('El serial no existe en el inventario. No se puede generar el PDF.', 'error');
       valido = false;
     }
