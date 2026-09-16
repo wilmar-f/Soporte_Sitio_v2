@@ -608,6 +608,7 @@ async function autocompletarEquipoPorSerial(consulta, { reintentar = true } = {}
     return false;
   }
 
+  if (gen !== busquedaSerialGen) return false;
   aplicarEquipoEnFormulario(resultado.equipo);
   return true;
 }
@@ -633,6 +634,10 @@ function borrarBusquedaEquipo() {
     limpiarInvalido(inputBusqueda);
   }
   limpiarCamposEquipo();
+  ['serial', ...CAMPOS_EQUIPO_SERIAL].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) limpiarInvalido(el);
+  });
 }
 
 /* ══════════════════════════════════════════════════════
@@ -911,7 +916,7 @@ function renderFormularioDiagnostico(modo = 'clasico') {
   bloquearCamposEquipo();
   initEvidenciasInput();
   autocompletarDatosTecnico();
-  requestAnimationFrame(() => autocompletarDatosTecnico());
+  setTimeout(() => autocompletarDatosTecnico(), 0);
 }
 
 const CAMPOS_IA_BETA = [
@@ -1048,8 +1053,16 @@ function registrarEventosFormulario() {
   formDiag?.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn || !formDiag.contains(btn)) return;
-    if (btn.id === 'btn-buscar-equipo') ejecutarBusquedaEquipo();
-    if (btn.id === 'btn-borrar-equipo') borrarBusquedaEquipo();
+    if (btn.id === 'btn-buscar-equipo') {
+      e.preventDefault();
+      e.stopPropagation();
+      ejecutarBusquedaEquipo();
+    }
+    if (btn.id === 'btn-borrar-equipo') {
+      e.preventDefault();
+      e.stopPropagation();
+      borrarBusquedaEquipo();
+    }
   });
   formDiag?.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.target?.id !== 'busqueda-equipo') return;
@@ -1062,6 +1075,7 @@ function registrarEventosFormulario() {
   } else {
     registrarEventosIA();
   }
+  autocompletarDatosTecnico();
 
   // ── Tabs firma ────────────────────────────────────
   document.getElementById('tab-dibujar').addEventListener('click', () => {
@@ -1215,17 +1229,22 @@ function bloquearCampoTecnico(id, valor, bloquear) {
  * Autocompleta y bloquea nombre, cédula y cargo del técnico según sesión.
  */
 function autocompletarDatosTecnico() {
-  usuarioActual = usuarioDesdeSesion(leerSesion());
+  const fresco = usuarioDesdeSesion(leerSesion());
+  if (fresco.nombreCompleto || fresco.cedula || fresco.cargo || fresco.rol) {
+    usuarioActual = {
+      ...usuarioActual,
+      ...fresco,
+      nombreCompleto: fresco.nombreCompleto || usuarioActual.nombreCompleto || '',
+      cedula: fresco.cedula || usuarioActual.cedula || '',
+      cargo: fresco.cargo || fresco.rol || usuarioActual.cargo || usuarioActual.rol || '',
+      rol: fresco.rol || usuarioActual.rol || '',
+    };
+  }
 
-  const campos = [
-    { id: 'nombre-tecnico', valor: usuarioActual.nombreCompleto || '', bloquear: true },
-    { id: 'cedula-tecnico', valor: usuarioActual.cedula || '', bloquear: true },
-    { id: 'cargo-tecnico', valor: usuarioActual.cargo || '', bloquear: true },
-  ];
-
-  campos.forEach(({ id, valor, bloquear }) => {
-    bloquearCampoTecnico(id, valor ?? '', bloquear);
-  });
+  const cargo = usuarioActual.cargo || usuarioActual.rol || '';
+  bloquearCampoTecnico('nombre-tecnico', usuarioActual.nombreCompleto || '', true);
+  bloquearCampoTecnico('cedula-tecnico', usuarioActual.cedula || '', true);
+  bloquearCampoTecnico('cargo-tecnico', cargo, true);
 }
 
 /* ══════════════════════════════════════════════════════

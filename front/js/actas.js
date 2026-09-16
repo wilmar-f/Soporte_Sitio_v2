@@ -66,6 +66,7 @@ let datosInventario = [];
 let inventarioListo = Promise.resolve();
 let recargaInventarioEnVuelo = null;
 let serieInventarioOk = false;
+let busquedaActivoGen = 0;
 
 function esc(str) {
   return String(str ?? '')
@@ -337,6 +338,7 @@ function limpiarCamposEquipoInventario() {
 }
 
 function borrarBusquedaActivo() {
+  busquedaActivoGen += 1;
   const busqueda = document.getElementById('act-busqueda-equipo');
   if (busqueda) {
     busqueda.value = '';
@@ -346,8 +348,10 @@ function borrarBusquedaActivo() {
 }
 
 async function autocompletarEquipoPorSerie(consulta, { reintentar = true } = {}) {
+  const gen = ++busquedaActivoGen;
   const inputBusqueda = document.getElementById('act-busqueda-equipo');
   await inventarioListo;
+  if (gen !== busquedaActivoGen) return false;
   if (!String(consulta || '').trim()) {
     limpiarCamposEquipoInventario();
     if (inputBusqueda) marcarInvalido(inputBusqueda);
@@ -356,6 +360,7 @@ async function autocompletarEquipoPorSerie(consulta, { reintentar = true } = {})
   }
   if (!datosInventario.length && reintentar) {
     const ok = await recargarInventario();
+    if (gen !== busquedaActivoGen) return false;
     if (!ok) {
       toast('No se pudo cargar el inventario.', 'error');
       limpiarCamposEquipoInventario();
@@ -365,8 +370,10 @@ async function autocompletarEquipoPorSerie(consulta, { reintentar = true } = {})
   let resultado = buscarEquipoEnInventario(consulta);
   if (resultado.motivo === 'no-encontrado' && reintentar) {
     await recargarInventario();
+    if (gen !== busquedaActivoGen) return false;
     resultado = buscarEquipoEnInventario(consulta);
   }
+  if (gen !== busquedaActivoGen) return false;
   if (!resultado.ok) {
     limpiarCamposEquipoInventario();
     if (inputBusqueda) marcarInvalido(inputBusqueda);
@@ -377,6 +384,7 @@ async function autocompletarEquipoPorSerie(consulta, { reintentar = true } = {})
     }
     return false;
   }
+  if (gen !== busquedaActivoGen) return false;
   const equipo = resultado.equipo;
   const serie = document.getElementById('act-serie');
   const marca = document.getElementById('act-marca');
@@ -1001,8 +1009,16 @@ function registrarEventosFormulario() {
   formActa?.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn || !formActa.contains(btn)) return;
-    if (btn.id === 'btn-buscar-activo') ejecutarBusquedaActivo();
-    if (btn.id === 'btn-borrar-activo') borrarBusquedaActivo();
+    if (btn.id === 'btn-buscar-activo') {
+      e.preventDefault();
+      e.stopPropagation();
+      ejecutarBusquedaActivo();
+    }
+    if (btn.id === 'btn-borrar-activo') {
+      e.preventDefault();
+      e.stopPropagation();
+      borrarBusquedaActivo();
+    }
   });
   formActa?.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.target?.id !== 'act-busqueda-equipo') return;
