@@ -854,7 +854,7 @@ function renderFormularioDiagnostico(modo = 'clasico') {
         <div class="campo campo-full">
           <label for="evidencias-input">Adjuntar imágenes (máx. 4)</label>
           <input type="file" id="evidencias-input" accept="image/*" multiple>
-          <p class="evidencias-ayuda">Se redimensionan a 400px y aparecen en una página adicional del PDF.</p>
+          <p class="evidencias-ayuda">Se redimensionan a 1600px y aparecen en una página adicional del PDF.</p>
           <div class="evidencias-preview" id="evidencias-preview"></div>
         </div>
       </fieldset>
@@ -1251,7 +1251,7 @@ function autocompletarDatosTecnico() {
    EVIDENCIAS DE FALLA (opcional)
    ══════════════════════════════════════════════════════ */
 
-function redimensionarImagen(file, maxSize = 400) {
+function redimensionarImagen(file, maxSize = 1600) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -1265,7 +1265,7 @@ function redimensionarImagen(file, maxSize = 400) {
       canvas.width = width;
       canvas.height = height;
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);

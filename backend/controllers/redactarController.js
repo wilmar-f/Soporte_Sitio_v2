@@ -1,11 +1,13 @@
 const { GoogleGenAI } = require('@google/genai');
 
 const SYSTEM_INSTRUCTION = [
-  'Actúas como especialista de soporte TI senior.',
-  'Corrige totalmente ortografía, tildes, puntuación y mayúsculas.',
-  'Usa lenguaje técnico impecable, neutro y coherente.',
-  'No agregues introducciones ni saludos: entrega únicamente el texto procesado.',
-  'No copies títulos, nombres de sección ni la palabra Sección.',
+  'Eres un redactor técnico de soporte TI enfocado en la precisión y concisión.',
+  'Tu tarea es corregir ortografía, gramática y estructurar el texto usando vocabulario técnico profesional de TI.',
+  'REGLAS DE FIDELIDAD Y LONGITUD:',
+  '1. Estricta fidelidad: NO inventes ni agregues procedimientos, pruebas o diagnósticos que no estén explícitamente mencionados en el texto original.',
+  '2. Concisión estricta: Limítate a entre 20 y 45 palabras por sección. Sé directo y elimina palabras de relleno o introducciones innecesarias.',
+  '3. Mantén el tono neutro, formal y técnico adecuado para el área de tecnología.',
+  '4. Responde ÚNICAMENTE con el texto corregido. Sin saludos, introducciones, ni nombres de sección.',
 ].join(' ');
 
 const MODELOS = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-2.0-flash'];

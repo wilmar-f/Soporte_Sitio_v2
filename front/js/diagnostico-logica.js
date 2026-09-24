@@ -47,25 +47,49 @@ export const DAAS_ACCESORIOS = [
 ];
 
 export const FALLAS_HARDWARE = [
-  'Adaptador display port',
-  'Almacenamiento hdd/ssd',
+  'Adaptador DP',
+  'Adaptador Red',
+  'Bateria',
   'Board',
+  'Boton Power',
   'Cable usb',
+  'Cable video',
   'Cargador de energía',
+  'Chasis doblado',
+  'Conector audio',
   'CPU',
+  'Cpu Fan',
+  'Daño Cosmetico',
   'Diadema',
   'Genera ruido anormal',
+  'Lamparas',
+  'Laser',
   'Mouse',
   'Multipuertos',
+  'Multipuertos USB',
   'No enciende',
   'Pantalla/No da imagen',
+  'Pila',
+  'Procesador',
+  'Puerto de carga',
+  'Puerto de Red',
+  'Puerto de video',
+  'Puerto Serial',
+  'Puerto Tipo C',
+  'Puertos USB',
   'RAM',
   'Recalentamiento excesivo',
+  'Rodillos',
+  'Se Alarma',
+  'Se reinicia y/o se apaga solo',
   'Teclado',
+  'Tecla Scan',
+  'Unidad de Almacenamiento',
 ];
 
 export const FALLAS_SOFTWARE = [
   'Bloqueo de equipo',
+  'Controladores',
   'Error sistema operativo',
   'Lentitud en procesos',
   'No inicia windows',
@@ -83,35 +107,24 @@ export const ACCIONES_REALIZADAS = [
 ];
 
 export const CAMBIO_PARTES = [
-  'RAM',
-  'SSD',
-  'Teclado',
-  'Mouse',
-  'Pila',
-  'Cargador de energía',
+  'Adaptador DP',
+  'Bateria',
+  'Cable Red',
   'Cable USB',
-  'Adaptador',
-  'Fuente de poder',
+  'Cable video',
+  'Cargador de energía',
   'Cooler',
   'Fan CPU',
-  'Repuesto de backup',
-  'Pruebas de funcionamiento',
-  'NINGUNA',
-];
-
-export const REPUESTOS_AVERIADOS = [
-  'Adaptador',
-  'Almacenamiento HDD/SSD',
-  'Board/Tarjeta principal',
-  'Cable usb',
-  'Cargador de energía',
-  'Cooler',
-  'Fan cpu',
   'Fuente de poder',
   'Mouse',
+  'Pantalla',
   'Pila',
+  'Pruebas de funcionamiento',
   'RAM',
+  'Repuesto de backup',
   'Teclado',
+  'Unidad Almacenamiento',
+  'NINGUNA',
 ];
 
 const ACTIVOS_CON_FLUJO = TIPOS_ACTIVO.filter(t => t.enabled).map(t => t.value);
@@ -154,6 +167,12 @@ function sortAlpha(items) {
   return [...items].sort((a, b) =>
     String(a).localeCompare(String(b), 'es', { sensitivity: 'base' })
   );
+}
+
+function sortPartes(items) {
+  const resto = items.filter((item) => item !== 'NINGUNA');
+  const ninguna = items.filter((item) => item === 'NINGUNA');
+  return [...sortAlpha(resto), ...ninguna];
 }
 
 function renderCheckboxes(name, items, prefix) {
@@ -636,7 +655,7 @@ export function renderDiagnosticoInteractivo() {
   const optsActivo = `<option value="">— Selecciona —</option>${renderSelectOptions(TIPOS_ACTIVO)}`;
   const optsHw = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(FALLAS_HARDWARE))}`;
   const optsSw = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(FALLAS_SOFTWARE))}`;
-  const optsRepuesto = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(REPUESTOS_AVERIADOS))}`;
+  const optsRepuesto = `<option value="">— Selecciona —</option>${renderSelectOptions(sortAlpha(FALLAS_HARDWARE))}`;
 
   const siNo = [
     { value: 'si', label: 'SÍ' },
@@ -752,7 +771,7 @@ export function renderDiagnosticoInteractivo() {
         <div class="diagnostico-subseccion">
           <span class="diagnostico-paso-label">Especifique si realizó cambio de partes</span>
           <div class="diagnostico-check-group diagnostico-check-group--3col">
-            ${renderCheckboxes('diag-partes', CAMBIO_PARTES, 'diag-part')}
+            ${renderCheckboxes('diag-partes', sortPartes(CAMBIO_PARTES), 'diag-part')}
           </div>
         </div>
         <div class="diagnostico-subseccion">
