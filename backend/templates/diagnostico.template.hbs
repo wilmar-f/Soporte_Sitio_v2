@@ -102,7 +102,7 @@
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
-      border: none;
+      border: 2px solid #000;
     }
 
     .tabla-diagnostico td {
@@ -206,9 +206,17 @@
       line-height: 1.15;
     }
 
+    .td-valor-centro {
+      text-align: center;
+    }
+
     .tbody-compact td {
       padding: 2px 4px !important;
       line-height: 1.15;
+      border-width: 1px;
+    }
+    .tbody-compact .th-label {
+      font-weight: 400;
     }
     .tbody-compact .th-seccion {
       padding: 2px 5px !important;
@@ -350,7 +358,7 @@
   </tr>
   <tr>
     <td class="th-label">SEDE</td>
-    <td class="td-valor" colspan="2">{{sede}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{sede}}</td>
     <td class="th-label">FECHA</td>
     <td class="td-valor" colspan="2">{{fecha}}</td>
   </tr>
@@ -361,13 +369,13 @@
   </tr>
   <tr>
     <td class="th-label">Nombre usuario</td>
-    <td class="td-valor td-valor-wrap-2" colspan="2">{{nombreUsuario}}</td>
+    <td class="td-valor td-valor-wrap-2 td-valor-centro" colspan="2">{{nombreUsuario}}</td>
     <td class="th-label">Área del usuario</td>
     <td class="td-valor" colspan="2">{{areaUsuario}}</td>
   </tr>
   <tr>
     <td class="th-label">Cédula</td>
-    <td class="td-valor" colspan="2">{{cedula}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{cedula}}</td>
     <td class="th-label">Ubicación física</td>
     <td class="td-valor" colspan="2">{{ubicacionFisica}}</td>
   </tr>
@@ -378,13 +386,13 @@
   </tr>
   <tr>
     <td class="th-label">Marca</td>
-    <td class="td-valor" colspan="2">{{marca}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{marca}}</td>
     <td class="th-label">Serial</td>
     <td class="td-valor" colspan="2">{{serial}}</td>
   </tr>
   <tr>
     <td class="th-label">Modelo</td>
-    <td class="td-valor" colspan="2">{{modelo}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{modelo}}</td>
     <td class="th-label">Etiqueta</td>
     <td class="td-valor" colspan="2">{{etiqueta}}</td>
   </tr>
@@ -401,25 +409,25 @@
   </tr>
   <tr>
     <td class="th-label">RAM</td>
-    <td class="td-valor" colspan="2">{{ram}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{ram}}</td>
     <td class="th-label th-label-una-linea">Nombre del equipo</td>
     <td class="td-valor" colspan="2">{{nombreEquipo}}</td>
   </tr>
   <tr>
     <td class="th-label th-label-una-linea">Sistema Operativo</td>
-    <td class="td-valor" colspan="2">{{sistemaOperativo}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{sistemaOperativo}}</td>
     <td class="th-label th-label-una-linea">Versión de Office</td>
     <td class="td-valor" colspan="2">{{versionOffice}}</td>
   </tr>
   <tr>
     <td class="th-label">HD</td>
-    <td class="td-valor" colspan="2">{{hd}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{hd}}</td>
     <td class="th-label th-label-apps-uso" rowspan="2">Mencione las aplicaciones de mayor uso</td>
     <td class="td-valor" rowspan="2" colspan="2">{{appsMayorUso}}</td>
   </tr>
   <tr>
     <td class="th-label th-label-una-linea">Aplicaciones Fuera del Estándar</td>
-    <td class="td-valor" colspan="2">{{appsFueraEstandar}}</td>
+    <td class="td-valor td-valor-centro" colspan="2">{{appsFueraEstandar}}</td>
   </tr>
   </tbody>
 

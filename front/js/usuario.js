@@ -26,7 +26,7 @@ import { formatearUltimoAcceso } from './ultimo-acceso.js';
 import { esRolAdministrador } from './noticias.js';
 import { renderPanelUsuarios } from './admin-usuarios.js';
 
-const MAX_EVIDENCIAS = 4;
+const MAX_EVIDENCIAS = 3;
 let evidenciasAdjuntas = [];
 
 /* ══════════════════════════════════════════════════════
@@ -852,7 +852,7 @@ function renderFormularioDiagnostico(modo = 'clasico') {
       <fieldset class="seccion">
         <legend>Evidencias de falla (opcional)</legend>
         <div class="campo campo-full">
-          <label for="evidencias-input">Adjuntar imágenes (máx. 4)</label>
+          <label for="evidencias-input">Adjuntar imágenes (máx. 3)</label>
           <input type="file" id="evidencias-input" accept="image/*" multiple>
           <p class="evidencias-ayuda">Se redimensionan a 1600px y aparecen en una página adicional del PDF.</p>
           <div class="evidencias-preview" id="evidencias-preview"></div>
@@ -1311,13 +1311,13 @@ function initEvidenciasInput() {
 
     const espacio = MAX_EVIDENCIAS - evidenciasAdjuntas.length;
     if (espacio <= 0) {
-      toast('Máximo 4 imágenes de evidencia.', 'advertencia');
+      toast('Máximo 3 imágenes de evidencia.', 'advertencia');
       return;
     }
 
     const aProcesar = files.slice(0, espacio);
     if (files.length > espacio) {
-      toast(`Solo se agregaron ${espacio} imagen(es). Máximo 4.`, 'advertencia');
+      toast(`Solo se agregaron ${espacio} imagen(es). Máximo 3.`, 'advertencia');
     }
 
     for (const file of aProcesar) {

@@ -76,5 +76,18 @@
     "tipoDiagnostico": "BETA",
     "serial": "1HF5110TR8",
     "etiqueta": "0049552"
+  },
+  {
+    "id": "aacce665-7d1c-43ad-8ada-6bbd3488d1d1",
+    "createdAt": "2026-09-25T01:08:12.598Z",
+    "fecha": "2026-09-25",
+    "sede": "ALKOMPRAR AKT BAJAJ SOACHA",
+    "sedeCodigo": "ALSOA",
+    "ubicacionFisica": "AKCE4",
+    "nombreTecnico": "Wilmar Eulises Franco Beltran",
+    "cedulaTecnico": "1121855145",
+    "tipoDiagnostico": "ESTANDAR",
+    "serial": "5CD439H9JY",
+    "etiqueta": "0048041"
   }
 ]

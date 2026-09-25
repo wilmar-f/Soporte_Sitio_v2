@@ -21,7 +21,7 @@ if (!sesionValida) {
 
 const usuarioActual = usuarioGuardado ? { ...JSON.parse(usuarioGuardado) } : {};
 
-const MAX_EVIDENCIAS = 4;
+const MAX_EVIDENCIAS = 3;
 const RE_ACTA = /^[A-Za-z0-9\-*]{2,10}$/;
 const TIPOS_NOVEDAD = [
   'CALIDAD PRESTAMO',
@@ -613,7 +613,7 @@ function renderFormularioActas() {
       <fieldset class="seccion">
         <legend>Evidencias (opcional)</legend>
         <div class="campo campo-full">
-          <label for="evidencias-input">Adjuntar imágenes (máx. 4)</label>
+          <label for="evidencias-input">Adjuntar imágenes (máx. 3)</label>
           <input type="file" id="evidencias-input" accept="image/*" multiple>
           <p class="evidencias-ayuda">Se redimensionan a 400px y aparecen en una página adicional del PDF.</p>
           <div class="evidencias-preview" id="evidencias-preview"></div>
@@ -1074,11 +1074,11 @@ function registrarEventosFormulario() {
     input.value = '';
     const espacio = MAX_EVIDENCIAS - evidenciasAdjuntas.length;
     if (espacio <= 0) {
-      toast('Máximo 4 imágenes de evidencia.', 'advertencia');
+      toast('Máximo 3 imágenes de evidencia.', 'advertencia');
       return;
     }
     const aProcesar = files.slice(0, espacio);
-    if (files.length > espacio) toast(`Solo se agregaron ${espacio} imagen(es). Máximo 4.`, 'advertencia');
+    if (files.length > espacio) toast(`Solo se agregaron ${espacio} imagen(es). Máximo 3.`, 'advertencia');
     for (const file of aProcesar) {
       if (!file.type.startsWith('image/')) {
         toast(`${file.name} no es una imagen válida.`, 'advertencia');

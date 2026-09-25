@@ -24,7 +24,7 @@ function getCompiledTemplate() {
 function renderEvidenciasHtml(imagenesBase64 = []) {
   const imgs = (imagenesBase64 || [])
     .filter(src => typeof src === 'string' && src.startsWith('data:'))
-    .slice(0, 4)
+    .slice(0, 3)
     .map(src => new Handlebars.SafeString(
       `<div class="evidencia-item"><img src="${src}" alt="Evidencia"></div>`
     ));
